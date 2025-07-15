@@ -24,18 +24,26 @@ export function Header() {
   }, []);
 
   const itemCount = isClient ? cartItems.reduce((sum, item) => sum + item.quantity, 0) : 0;
+  const textColor = isScrolled ? 'text-foreground' : 'text-white';
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60' : 'bg-transparent'}`}>
       <div className="container flex h-20 max-w-screen-2xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
           <Logo />
-          <span className={`font-headline text-2xl font-bold ${isScrolled ? 'text-primary' : 'text-white'}`}>Wanderlust Hub</span>
+          <span className={`font-headline text-2xl font-bold ${textColor}`}>Wanderlust Hub</span>
         </Link>
+        
+        <nav className="hidden md:flex items-center gap-6">
+          <Link href="/#tours" className={`font-medium transition-colors hover:text-primary ${textColor}`}>Tours</Link>
+          <Link href="/#destinations" className={`font-medium transition-colors hover:text-primary ${textColor}`}>Destinations</Link>
+          <Link href="#" className={`font-medium transition-colors hover:text-primary ${textColor}`}>About</Link>
+        </nav>
+
         <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/cart">
-                <ShoppingCart className={`h-6 w-6 ${isScrolled ? 'text-primary' : 'text-white'}`} />
+                <ShoppingCart className={`h-6 w-6 transition-colors ${textColor}`} />
                 {isClient && itemCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {itemCount}
