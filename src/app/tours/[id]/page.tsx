@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { getTourById } from '@/lib/tours';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -14,15 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Clock, MapPin, Star, Tag, Users, Minus, Plus, ShoppingCart, CheckCircle, XCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
-type TourDetailsPageProps = {
-  params: {
-    id: string;
-  };
-};
-
-export default function TourDetailsPage({ params }: TourDetailsPageProps) {
+export default function TourDetailsPage() {
+  const params = useParams();
   const { toast } = useToast();
-  const tour = getTourById(params.id);
+  const tour = getTourById(params.id as string);
 
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
