@@ -1,18 +1,32 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Tour } from '@/types';
+import { useWishlist } from '@/hooks/use-wishlist';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Star, Heart, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface TourCardProps {
   tour: Tour;
 }
 
 export function TourCard({ tour }: TourCardProps) {
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const isFavorited = isInWishlist(tour.id);
+
   // Display the starting price from the first tier (for a single person)
   const startingPrice = tour.priceTiers[0]?.pricePerAdult;
+
+  const handleFavoriteClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isFavorited) {
+      removeFromWishlist(tour.id);
+    } else {
+      addToWishlist(tour);
+    }
+  };
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border rounded-lg">
@@ -30,9 +44,17 @@ export function TourCard({ tour }: TourCardProps) {
             <MapPin className="h-3 w-3 mr-1.5" />
             {tour.destination}
         </Badge>
-        <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/80 hover:bg-white text-gray-700">
-          <Heart className="h-4 w-4" />
-          <span className="sr-only">Like</span>
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          className={cn(
+            "absolute top-3 right-3 h-8 w-8 rounded-full bg-white/80 hover:bg-white text-gray-700",
+            isFavorited && "text-red-500 bg-red-100/80 hover:bg-red-100"
+          )}
+          onClick={handleFavoriteClick}
+          aria-label={isFavorited ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
         </Button>
       </div>
 
