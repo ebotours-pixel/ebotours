@@ -38,19 +38,19 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, [wishlistItems]);
 
   const addToWishlist = (tour: Tour) => {
-    setWishlistItems(prevItems => {
-      if (prevItems.some(item => item.id === tour.id)) {
-        return prevItems;
-      }
-      toast({ title: "Added to Wishlist", description: `${tour.name} has been added to your wishlist.` });
-      return [...prevItems, tour];
-    });
+    if (wishlistItems.some(item => item.id === tour.id)) {
+      return; // Already in wishlist, do nothing.
+    }
+    setWishlistItems(prevItems => [...prevItems, tour]);
+    toast({ title: "Added to Wishlist", description: `${tour.name} has been added to your wishlist.` });
   };
 
   const removeFromWishlist = (tourId: string) => {
     const tourName = wishlistItems.find(item => item.id === tourId)?.name;
     setWishlistItems(prevItems => prevItems.filter(item => item.id !== tourId));
-    toast({ title: "Removed from Wishlist", description: `${tourName || 'The tour'} has been removed from your wishlist.` });
+    if (tourName) {
+      toast({ title: "Removed from Wishlist", description: `${tourName} has been removed from your wishlist.` });
+    }
   };
   
   const isInWishlist = (tourId: string) => {

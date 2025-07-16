@@ -38,21 +38,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartItems]);
 
   const addToCart = (tour: Tour, adults: number, children: number) => {
+    const existingItem = cartItems.find(item => item.tour.id === tour.id);
+    if (existingItem) {
+      toast({ title: "Already in Cart", description: `${tour.name} is already in your cart.` });
+      return;
+    }
+    
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.tour.id === tour.id);
-      if (existingItem) {
-        toast({ title: "Already in Cart", description: `${tour.name} is already in your cart.` });
-        return prevItems;
-      }
-      toast({ title: "Added to Cart", description: `${tour.name} has been added to your cart.` });
       // The quantity is now the total number of people for this item
       return [...prevItems, { tour, quantity: adults + children, adults, children }];
     });
+    toast({ title: "Added to Cart", description: `${tour.name} has been added to your cart.` });
   };
 
   const removeFromCart = (tourId: string) => {
+    const tourName = cartItems.find(item => item.tour.id === tourId)?.tour.name;
     setCartItems(prevItems => prevItems.filter(item => item.tour.id !== tourId));
-    toast({ title: "Removed from Cart", description: "The tour has been removed from your cart." });
+    if (tourName) {
+      toast({ title: "Removed from Cart", description: `"${tourName}" has been removed from your cart.` });
+    }
   };
 
   const clearCart = () => {
