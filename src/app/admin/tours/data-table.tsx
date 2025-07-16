@@ -72,12 +72,20 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md border">
-        <div className="flex items-center p-4">
+        <div className="flex items-center p-4 gap-4">
             <Input
-            placeholder="Filter tours by name..."
+            placeholder="Filter by tour name..."
             value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
                 table.getColumn("name")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+            />
+            <Input
+            placeholder="Filter by destination..."
+            value={(table.getColumn("destination")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+                table.getColumn("destination")?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
             />

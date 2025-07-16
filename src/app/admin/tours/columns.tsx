@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 export const columns: ColumnDef<Tour>[] = [
   {
@@ -53,7 +54,14 @@ export const columns: ColumnDef<Tour>[] = [
         </Button>
       )
     },
-    cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
+    cell: ({ row }) => {
+      const tour = row.original
+      return (
+        <Link href={`/tours/${tour.id}`} target="_blank" className="font-medium text-primary hover:underline">
+          {row.getValue("name")}
+        </Link>
+      )
+    }
   },
   {
     accessorKey: "destination",
@@ -110,7 +118,9 @@ export const columns: ColumnDef<Tour>[] = [
               Copy Tour ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/tours/${tour.id}`} target="_blank">View Details</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Edit Tour</DropdownMenuItem>
              <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
               Delete Tour
