@@ -1,11 +1,18 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Search, ArrowRight, Mail, Phone, MapPin, Twitter, Facebook, Instagram } from 'lucide-react';
+import { ShoppingCart, Search, ArrowRight, Mail, Phone, MapPin, Twitter, Facebook, Instagram, ChevronDown } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart.tsx';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function TopBar() {
   return (
@@ -74,7 +81,22 @@ export function Header() {
             <Link href="/" className="font-medium text-foreground transition-colors hover:text-primary">Home</Link>
             <Link href="#" className="font-medium text-foreground transition-colors hover:text-primary">About Us</Link>
             <Link href="#" className="font-medium text-foreground transition-colors hover:text-primary">Destination</Link>
-            <Link href="/#tours" className="font-medium text-foreground transition-colors hover:text-primary">Tour</Link>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center font-medium text-foreground transition-colors hover:text-primary focus:outline-none">
+                Tour
+                <ChevronDown className="relative top-[1px] ml-1 h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link href="/#tours">Package tours</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  Daily tours
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Link href="#" className="font-medium text-foreground transition-colors hover:text-primary">Services</Link>
             <Link href="#" className="font-medium text-foreground transition-colors hover:text-primary">Blog</Link>
             <Link href="#" className="font-medium text-foreground transition-colors hover:text-primary">Contact</Link>
