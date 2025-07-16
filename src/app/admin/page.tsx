@@ -57,7 +57,6 @@ export default function AdminLoginPage() {
       // in our middleware, which will handle the redirect.
       // We can also force a refresh to ensure the new state is picked up.
       router.refresh();
-      router.push("/admin/dashboard");
     }
   }
 

@@ -1,7 +1,6 @@
-
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { Tour } from '@/types';
 import { useToast } from "@/hooks/use-toast"
 
@@ -37,21 +36,27 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [wishlistItems]);
 
-  const addToWishlist = (tour: Tour) => {
-    if (wishlistItems.some(item => item.id === tour.id)) {
-      return; // Already in wishlist, do nothing.
-    }
-    setWishlistItems(prevItems => [...prevItems, tour]);
-    toast({ title: "Added to Wishlist", description: `${tour.name} has been added to your wishlist.` });
-  };
+  const addToWishlist = useCallback((tour: Tour) => {
+    setWishlistItems(prevItems => {
+        if (prevItems.some(item => item.id === tour.id)) {
+            return prevItems;
+        }
+        toast({ title: "Added to Wishlist", description: `${tour.name} has been added to your wishlist.` });
+        return [...prevItems, tour];
+    });
+  }, [toast]);
 
-  const removeFromWishlist = (tourId: string) => {
-    const tourName = wishlistItems.find(item => item.id === tourId)?.name;
-    setWishlistItems(prevItems => prevItems.filter(item => item.id !== tourId));
+  const removeFromWishlist = useCallback((tourId: string) => {
+    let tourName: string | undefined;
+    setWishlistItems(prevItems => {
+        tourName = prevItems.find(item => item.id === tourId)?.tour.name;
+        return prevItems.filter(item => item.id !== tourId);
+    });
+
     if (tourName) {
       toast({ title: "Removed from Wishlist", description: `${tourName} has been removed from your wishlist.` });
     }
-  };
+  }, [toast]);
   
   const isInWishlist = (tourId: string) => {
     return wishlistItems.some(item => item.id === tourId);

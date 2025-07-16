@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { Tour, CartItem } from '@/types';
 import { useToast } from "@/hooks/use-toast"
 
@@ -37,43 +37,45 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [cartItems]);
 
-  const addToCart = (tour: Tour, adults: number, children: number) => {
-    const existingItem = cartItems.find(item => item.tour.id === tour.id);
-    if (existingItem) {
-      toast({ title: "Already in Cart", description: `${tour.name} is already in your cart.` });
-      return;
-    }
-    
+  const addToCart = useCallback((tour: Tour, adults: number, children: number) => {
     setCartItems(prevItems => {
-      // The quantity is now the total number of people for this item
+      const existingItem = prevItems.find(item => item.tour.id === tour.id);
+      if (existingItem) {
+        toast({ title: "Already in Cart", description: `${tour.name} is already in your cart.` });
+        return prevItems;
+      }
+      toast({ title: "Added to Cart", description: `${tour.name} has been added to your cart.` });
       return [...prevItems, { tour, quantity: adults + children, adults, children }];
     });
-    toast({ title: "Added to Cart", description: `${tour.name} has been added to your cart.` });
-  };
+  }, [toast]);
 
-  const removeFromCart = (tourId: string) => {
-    const tourName = cartItems.find(item => item.tour.id === tourId)?.tour.name;
-    setCartItems(prevItems => prevItems.filter(item => item.tour.id !== tourId));
+  const removeFromCart = useCallback((tourId: string) => {
+    let tourName: string | undefined;
+    setCartItems(prevItems => {
+        tourName = prevItems.find(item => item.tour.id === tourId)?.tour.name;
+        return prevItems.filter(item => item.tour.id !== tourId)
+    });
+    
     if (tourName) {
       toast({ title: "Removed from Cart", description: `"${tourName}" has been removed from your cart.` });
     }
-  };
+  }, [toast]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
-  };
+  }, []);
 
-  const getCartTotal = () => {
+  const getCartTotal = useCallback(() => {
     return cartItems.reduce((total, item) => {
-      const totalPeople = item.adults! + item.children!;
+      const totalPeople = (item.adults ?? 0) + (item.children ?? 0);
       const priceTier = item.tour.priceTiers.find(tier => 
         totalPeople >= tier.minPeople && (tier.maxPeople === null || totalPeople <= tier.maxPeople)
       ) || item.tour.priceTiers[item.tour.priceTiers.length - 1];
       
-      const itemTotal = (item.adults! * priceTier.pricePerAdult) + (item.children! * priceTier.pricePerChild);
+      const itemTotal = ((item.adults ?? 0) * priceTier.pricePerAdult) + ((item.children ?? 0) * priceTier.pricePerChild);
       return total + itemTotal;
     }, 0);
-  };
+  }, [cartItems]);
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart, getCartTotal }}>

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Search, User, Mail, Phone, MapPin, Twitter, Facebook, Instagram, ChevronDown, Heart } from 'lucide-react';
+import { ShoppingCart, Search, Mail, Phone, MapPin, Twitter, Facebook, Instagram, ChevronDown, Heart } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart.tsx';
 import { useWishlist } from '@/hooks/use-wishlist';
 import { Logo } from '@/components/logo';

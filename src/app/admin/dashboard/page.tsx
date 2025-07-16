@@ -15,7 +15,7 @@ export default function AdminDashboard() {
           <CardTitle>Welcome, Admin!</CardTitle>
           <CardDescription>
             This is your control panel. You can manage tours, bookings, and users from here.
-          </d>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <p>Dashboard content will go here.</p>
