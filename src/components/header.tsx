@@ -148,10 +148,6 @@ export function Header() {
                   <span className="sr-only">Shopping Cart</span>
                   </Link>
               </Button>
-              <Button variant="ghost" size="icon">
-                <User className="h-6 w-6 text-foreground" />
-                <span className="sr-only">My Account</span>
-              </Button>
           </div>
         </div>
       </div>
