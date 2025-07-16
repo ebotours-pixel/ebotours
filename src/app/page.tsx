@@ -103,6 +103,24 @@ const articles = [
   },
 ]
 
+const heroImages = [
+  {
+    src: 'https://images.unsplash.com/photo-1572252433829-d6a3c659d832?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8MTc1Mjg4MTM3Mnww&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Ancient Egyptian temples',
+    hint: 'Egypt travel'
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8fDE3NTI4ODEzNzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Hot air balloons over Luxor',
+    hint: 'Egypt balloons'
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1552596455-1f6c44244246?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8fDE3NTI4ODEzNzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'The Nile river at sunset',
+    hint: 'Egypt nile'
+  }
+];
+
 export default function Home() {
   const tours = getTours();
   const categories = ["Adventure", "Relaxation", "Cultural", "Culinary", "Family", "Honeymoon"];
@@ -111,43 +129,59 @@ export default function Home() {
   return (
     <div className="space-y-16 md:space-y-24">
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[500px] flex items-center text-white">
-        <div className="absolute inset-0 bg-black/50 z-10" />
-        <Image
-          src="https://images.unsplash.com/photo-1572252433829-d6a3c659d832?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8MTc1Mjg4MTM3Mnww&ixlib=rb-4.1.0&q=80&w=1080"
-          alt="Ancient Egyptian temples"
-          fill
-          className="object-cover"
-          priority
-          data-ai-hint="Egypt travel"
-        />
-        <div className="container mx-auto px-4 relative z-20 text-center">
-          <h1 className="font-headline text-4xl md:text-6xl font-bold leading-tight mb-4">Let's Make Your Best<br />Trip With Us</h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8">
-            Explore the world with our curated travel packages. Adventure awaits!
-          </p>
-          <div className="max-w-3xl mx-auto p-4 bg-white/20 backdrop-blur-sm border-0 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <Input placeholder="Search tour..." className="bg-white text-foreground col-span-1 md:col-span-2" />
-                <Select>
-                  <SelectTrigger className="bg-white text-foreground"><SelectValue placeholder="Destination" /></SelectTrigger>
-                  <SelectContent>
-                     {egyptianDestinations.map(destination => (
-                        <SelectItem key={destination} value={destination.toLowerCase()}>{destination}</SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                 <Select>
-                  <SelectTrigger className="bg-white text-foreground"><SelectValue placeholder="Type" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cultural">Cultural</SelectItem>
-                    <SelectItem value="adventure">Adventure</SelectItem>
-                    <SelectItem value="culinary">Culinary</SelectItem>
-                    <SelectItem value="relaxation">Relaxation</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button size="lg" className="w-full">Search</Button>
-              </div>
+      <section className="relative h-[80vh] min-h-[500px]">
+        <Carousel
+          opts={{ loop: true }}
+          className="w-full h-full"
+        >
+          <CarouselContent className="h-full">
+            {heroImages.map((image, index) => (
+              <CarouselItem key={index} className="h-full">
+                <div className="relative h-full w-full">
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    className="object-cover"
+                    priority={index === 0}
+                    data-ai-hint={image.hint}
+                  />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <div className="absolute inset-0 bg-black/50 z-10" />
+        </Carousel>
+
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+          <div className="container mx-auto px-4 text-center text-white">
+            <h1 className="font-headline text-4xl md:text-6xl font-bold leading-tight mb-4">Let's Make Your Best<br />Trip With Us</h1>
+            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8">
+              Explore the world with our curated travel packages. Adventure awaits!
+            </p>
+            <div className="max-w-3xl mx-auto p-4 bg-white/20 backdrop-blur-sm border-0 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <Input placeholder="Search tour..." className="bg-white text-foreground col-span-1 md:col-span-2" />
+                  <Select>
+                    <SelectTrigger className="bg-white text-foreground"><SelectValue placeholder="Destination" /></SelectTrigger>
+                    <SelectContent>
+                      {egyptianDestinations.map(destination => (
+                          <SelectItem key={destination} value={destination.toLowerCase()}>{destination}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Select>
+                    <SelectTrigger className="bg-white text-foreground"><SelectValue placeholder="Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cultural">Cultural</SelectItem>
+                      <SelectItem value="adventure">Adventure</SelectItem>
+                      <SelectItem value="culinary">Culinary</SelectItem>
+                      <SelectItem value="relaxation">Relaxation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="lg" className="w-full">Search</Button>
+                </div>
+            </div>
           </div>
         </div>
       </section>
@@ -402,5 +436,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
