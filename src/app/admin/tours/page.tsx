@@ -12,7 +12,7 @@ export default function ToursPage() {
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Tours</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Tours Management</h2>
             <p className="text-muted-foreground">
                 Here's a list of all your tours. You can add, edit, or delete them.
             </p>
