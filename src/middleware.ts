@@ -1,38 +1,33 @@
-
-import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/middleware'
+import { type NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = await createClient(request)
+  const { supabase, response } = await createClient(request);
 
-  // Refresh session if expired - important for server-side rendering
-  await supabase.auth.getSession()
-
+  // This will refresh the session cookie if it's expired.
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase.auth.getSession();
 
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
-  // Protect admin routes
-  if (pathname.startsWith('/admin/dashboard')) {
-    if (!session) {
-      // Redirect to login page if no session
-      const url = request.nextUrl.clone()
-      url.pathname = '/admin'
-      return NextResponse.redirect(url)
-    }
+  // If the user is trying to access an admin page and isn't logged in,
+  // redirect them to the admin login page.
+  if (pathname.startsWith('/admin/') && pathname !== '/admin' && !session) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin';
+    return NextResponse.redirect(url);
   }
 
-  // Redirect to dashboard if user is logged in and trying to access login page
+  // If the user is logged in and tries to access the admin login page,
+  // redirect them to the dashboard.
   if (session && pathname === '/admin') {
-     const url = request.nextUrl.clone()
-     url.pathname = '/admin/dashboard'
-     return NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/dashboard';
+    return NextResponse.redirect(url);
   }
 
-
-  return response
+  return response;
 }
 
 export const config = {
@@ -46,4 +41,4 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
-}
+};

@@ -55,7 +55,8 @@ export default function AdminLoginPage() {
       });
       // A successful sign-in will trigger the onAuthStateChange listener
       // in our middleware, which will handle the redirect.
-      // We can also force a refresh to ensure the new state is picked up.
+      // We can also force a redirect to ensure the new state is picked up.
+      router.push('/admin/dashboard');
       router.refresh();
     }
   }
