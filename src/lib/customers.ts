@@ -33,9 +33,9 @@ const generateCustomers = (): Customer[] => {
 
     // Add some newsletter-only subscribers for variety
     const newsletterSubscribers = [
-        { id: `cust-${Object.keys(customersByEmail).length + 1}`, name: 'Charlie Brown', email: 'charlie.brown@email.com' },
-        { id: `cust-${Object.keys(customersByEmail).length + 2}`, name: 'Diana Prince', email: 'diana.prince@email.com' },
-        { id: `cust-${Object.keys(customersByEmail).length + 3}`, name: 'Ethan Hunt', email: 'ethan.hunt@email.com' },
+        { id: `cust-${Object.keys(customersByEmail).length + 1}`, email: 'charlie.brown@email.com' },
+        { id: `cust-${Object.keys(customersByEmail).length + 2}`, email: 'diana.prince@email.com' },
+        { id: `cust-${Object.keys(customersByEmail).length + 3}`, email: 'ethan.hunt@email.com' },
     ];
     
     newsletterSubscribers.forEach(sub => {
@@ -44,6 +44,7 @@ const generateCustomers = (): Customer[] => {
              signupDate.setDate(signupDate.getDate() - Math.floor(Math.random() * 90));
              customersByEmail[sub.email] = {
                 ...sub,
+                name: sub.email, // For newsletter subs, name is the email
                 source: "Newsletter",
                 totalBookings: 0,
                 totalSpent: 0,
@@ -63,4 +64,5 @@ const customers = generateCustomers();
 export const getCustomers = (): Customer[] => customers;
 
 export const getCustomerById = (id: string): Customer | undefined => customers.find(c => c.id === id);
+
 
