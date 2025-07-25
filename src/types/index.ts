@@ -54,3 +54,14 @@ export type Booking = {
     totalPrice: number;
     status: "Confirmed" | "Pending" | "Cancelled";
 };
+
+export type Customer = {
+    id: string;
+    name: string;
+    email: string;
+    source: "Booking" | "Newsletter";
+    totalBookings: number;
+    totalSpent: number;
+    createdAt: string; // ISO string format for dates
+    bookings: Booking[];
+}
