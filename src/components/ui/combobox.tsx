@@ -102,7 +102,6 @@ export function Combobox({
                   value={option.value}
                   onSelect={(currentValue) => {
                     handleSelect(currentValue);
-                    // setOpen(false); // Keep open for multi-select
                   }}
                 >
                   <Check
