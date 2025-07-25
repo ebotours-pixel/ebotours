@@ -6,7 +6,7 @@ const tours: Tour[] = [
     id: '1',
     name: 'Pyramids & Sphinx Expedition',
     destination: 'Cairo',
-    type: 'Cultural',
+    type: ['Cultural'],
     duration: 3,
     priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 150, pricePerChild: 80 },
@@ -56,7 +56,7 @@ const tours: Tour[] = [
     id: '2',
     name: 'Luxor: Valley of the Kings',
     destination: 'Luxor',
-    type: 'Cultural',
+    type: ['Cultural'],
     duration: 4,
     priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 200, pricePerChild: 100 },
@@ -106,7 +106,7 @@ const tours: Tour[] = [
     id: '3',
     name: 'Nile Cruise from Aswan',
     destination: 'Aswan',
-    type: 'Relaxation',
+    type: ['Relaxation'],
     duration: 5,
     priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 300, pricePerChild: 150 },
@@ -156,7 +156,7 @@ const tours: Tour[] = [
     id: '4',
     name: 'Red Sea Diving Adventure',
     destination: 'Sharm El Sheikh',
-    type: 'Adventure',
+    type: ['Adventure'],
     duration: 7,
      priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 350, pricePerChild: 180 },
@@ -209,7 +209,7 @@ const tours: Tour[] = [
     id: '5',
     name: 'Hurghada Beach Getaway',
     destination: 'Hurghada',
-    type: 'Relaxation',
+    type: ['Relaxation'],
     duration: 6,
     priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 250, pricePerChild: 120 },
@@ -259,7 +259,7 @@ const tours: Tour[] = [
     id: '6',
     name: 'Alexandria: Pearl of the Mediterranean',
     destination: 'Alexandria',
-    type: 'Cultural',
+    type: ['Cultural', 'Daily'],
     duration: 1,
     priceTiers: [
         { minPeople: 1, maxPeople: 1, pricePerAdult: 180, pricePerChild: 90 },

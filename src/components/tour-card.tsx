@@ -1,4 +1,5 @@
 
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Tour } from '@/types';
@@ -38,7 +39,7 @@ export function TourCard({ tour }: TourCardProps) {
             alt={tour.name}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
-            data-ai-hint={`${tour.destination} ${tour.type}`}
+            data-ai-hint={`${tour.destination} ${tour.type[0]}`}
           />
         </Link>
         <Badge variant="secondary" className="absolute top-3 left-3 bg-white/80 hover:bg-white text-gray-700">

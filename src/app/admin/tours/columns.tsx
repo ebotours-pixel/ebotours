@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
@@ -66,6 +67,20 @@ export const columns: ColumnDef<Tour>[] = [
   {
     accessorKey: "destination",
     header: "Destination",
+  },
+  {
+    accessorKey: "type",
+    header: "Categories",
+    cell: ({ row }) => {
+      const categories = row.getValue("type") as string[];
+      return (
+        <div className="flex flex-wrap gap-1">
+          {categories.map((category) => (
+            <Badge key={category} variant="outline">{category}</Badge>
+          ))}
+        </div>
+      )
+    }
   },
   {
     accessorKey: "duration",

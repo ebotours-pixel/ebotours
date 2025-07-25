@@ -1,4 +1,5 @@
 
+
 export type PriceTier = {
   minPeople: number;
   maxPeople: number | null; // null for 'and up'
@@ -10,7 +11,7 @@ export type Tour = {
   id: string;
   name: string;
   destination: string;
-  type: 'Adventure' | 'Relaxation' | 'Cultural' | 'Culinary' | 'Family' | 'Honeymoon';
+  type: string[];
   duration: number; // in days
   description: string;
   itinerary: { day: number; activity: string }[];

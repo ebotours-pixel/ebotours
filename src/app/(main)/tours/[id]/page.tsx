@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -64,7 +65,7 @@ export default function TourDetailsPage() {
                       alt={`${tour.name} - image ${index + 1}`}
                       fill
                       className="object-cover"
-                      data-ai-hint={`${tour.destination} ${tour.type}`}
+                      data-ai-hint={`${tour.destination} ${tour.type[0]}`}
                       priority={index === 0}
                     />
                   </div>
@@ -82,7 +83,7 @@ export default function TourDetailsPage() {
               <div className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary"/> <span>{tour.destination}</span></div>
               <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary"/> <span>{tour.durationText ?? `${tour.duration} days`}</span></div>
               <div className="flex items-center gap-2"><Star className="h-5 w-5 text-primary fill-primary"/> <span>{tour.rating}/5.0</span></div>
-              <div className="flex items-center gap-2"><Tag className="h-5 w-5 text-primary"/> <span>{tour.tourType ?? tour.type}</span></div>
+              <div className="flex items-center gap-2"><Tag className="h-5 w-5 text-primary"/> <span>{tour.tourType ?? tour.type.join(', ')}</span></div>
             </div>
             <Separator className="my-6" />
             <p className="text-muted-foreground mb-6">{tour.description}</p>
@@ -126,7 +127,7 @@ export default function TourDetailsPage() {
               </CardHeader>
               <CardContent className="text-sm space-y-2">
                 <p><span className="font-semibold text-foreground">Duration:</span> {tour.durationText ?? `${tour.duration} days`}</p>
-                <p><span className="font-semibold text-foreground">Type:</span> {tour.tourType ?? tour.type}</p>
+                <p><span className="font-semibold text-foreground">Type:</span> {tour.tourType ?? tour.type.join(', ')}</p>
                 {tour.availabilityDescription && <p><span className="font-semibold text-foreground">Availability:</span> {tour.availabilityDescription}</p>}
                 {tour.pickupAndDropoff && <p><span className="font-semibold text-foreground">Pick up & drop off:</span> {tour.pickupAndDropoff}</p>}
               </CardContent>

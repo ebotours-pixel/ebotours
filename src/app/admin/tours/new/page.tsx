@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ImageUploader } from "@/components/admin/image-uploader";
+import { Combobox } from "@/components/ui/combobox";
 
 const priceTierSchema = z.object({
   minPeople: z.coerce.number().min(1, "Min people is required"),
@@ -30,7 +31,16 @@ const itineraryItemSchema = z.object({
 });
 
 const destinations = ["Cairo", "Luxor", "Aswan", "Sharm El Sheikh", "Hurghada", "Alexandria"];
-const tourCategories = ['Adventure', 'Relaxation', 'Cultural', 'Culinary', 'Family', 'Honeymoon', 'Package', 'Daily'];
+const tourCategories = [
+    { value: "Adventure", label: "Adventure" },
+    { value: "Relaxation", label: "Relaxation" },
+    { value: "Cultural", label: "Cultural" },
+    { value: "Culinary", label: "Culinary" },
+    { value: "Family", label: "Family" },
+    { value: "Honeymoon", label: "Honeymoon" },
+    { value: "Package", label: "Package" },
+    { value: "Daily", label: "Daily" },
+];
 
 
 const formSchema = z.object({
@@ -38,7 +48,9 @@ const formSchema = z.object({
   destination: z.enum(destinations as [string, ...string[]], {
     errorMap: () => ({ message: "Please select a destination." }),
   }),
-  type: z.enum(tourCategories as [string, ...string[]]),
+  type: z.array(z.string()).refine(value => value.some(item => item), {
+    message: "You have to select at least one item.",
+  }),
   duration: z.coerce.number().min(1, "Duration must be at least 1 day."),
   description: z.string().min(10, "Description must be at least 10 characters."),
   images: z.array(z.instanceof(File)).min(1, "At least one image is required."),
@@ -79,6 +91,7 @@ export default function NewTourPage() {
       availabilityDescription: "",
       pickupAndDropoff: "",
       cancellationPolicy: "",
+      type: [],
     },
   });
 
@@ -364,24 +377,23 @@ export default function NewTourPage() {
                                     <FormMessage />
                                 </FormItem>
                             )} />
-                            <FormField control={form.control} name="type" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tour Category</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Select a tour category" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {tourCategories.map(category => (
-                                            <SelectItem key={category} value={category}>{category}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
+                            <FormField
+                                control={form.control}
+                                name="type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Tour Category</FormLabel>
+                                        <Combobox
+                                            options={tourCategories}
+                                            selected={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select categories..."
+                                            className="w-full"
+                                        />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                              <FormField control={form.control} name="tourType" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Tour Type</FormLabel>
