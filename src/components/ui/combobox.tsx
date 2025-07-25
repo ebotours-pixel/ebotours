@@ -104,7 +104,9 @@ export function Combobox({
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={handleSelect}
+                  onSelect={(currentValue) => {
+                    handleSelect(currentValue)
+                  }}
                 >
                   <Check
                     className={cn(
