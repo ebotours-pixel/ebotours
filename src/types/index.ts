@@ -40,3 +40,17 @@ export type CartItem = {
   children?: number;
   date?: Date;
 };
+
+export type Booking = {
+    id: string;
+    customerName: string;
+    customerEmail: string;
+    tourId: string;
+    tourName: string;
+    tourSlug: string;
+    bookingDate: string; // ISO string format for dates
+    adults: number;
+    children: number;
+    totalPrice: number;
+    status: "Confirmed" | "Pending" | "Cancelled";
+};

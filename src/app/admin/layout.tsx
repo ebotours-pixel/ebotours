@@ -125,7 +125,7 @@ export default function AdminLayout({
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="#" isActive={pathname.startsWith('/admin/bookings')}>
+              <SidebarMenuButton href="/admin/bookings" isActive={pathname.startsWith('/admin/bookings')}>
                 <Calendar />
                 <span>Bookings</span>
               </SidebarMenuButton>
