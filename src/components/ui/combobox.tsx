@@ -44,10 +44,11 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (value: string) => {
-    const newSelected = selected.includes(value)
-      ? selected.filter((item) => item !== value)
-      : [...selected, value]
-    onChange(newSelected)
+    onChange(
+      selected.includes(value)
+        ? selected.filter((item) => item !== value)
+        : [...selected, value]
+    )
   }
 
   const handleRemove = (e: React.MouseEvent, valueToRemove: string) => {
