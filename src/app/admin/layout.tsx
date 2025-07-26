@@ -23,6 +23,7 @@ import {
   Users,
   Newspaper,
   PanelLeft,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -92,6 +93,7 @@ export default function AdminLayout({
     if (pathname.startsWith('/admin/bookings')) return 'Bookings';
     if (pathname.startsWith('/admin/customers')) return 'Customers';
     if (pathname.startsWith('/admin/blog')) return 'Blog';
+    if (pathname.startsWith('/admin/home-page-editor')) return 'Home Page Editor';
     if (pathname.startsWith('/admin/settings')) return 'Settings';
     return 'Admin';
   }
@@ -140,6 +142,12 @@ export default function AdminLayout({
               <SidebarMenuButton href="/admin/blog" isActive={pathname.startsWith('/admin/blog')}>
                 <Newspaper />
                 <span>Blog</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton href="/admin/home-page-editor" isActive={pathname.startsWith('/admin/home-page-editor')}>
+                <LayoutDashboard />
+                <span>Home Page Editor</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
