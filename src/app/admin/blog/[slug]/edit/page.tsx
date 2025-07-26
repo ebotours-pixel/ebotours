@@ -38,12 +38,13 @@ const formSchema = z.object({
   status: z.enum(["Published", "Draft"]),
   tags: z.array(z.string()).optional(),
   featuredImage: z.array(z.any()).optional(),
+  topic: z.string().optional(),
 });
 
 function GenerateButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} variant="outline" className="w-full">
+    <Button type="submit" name="action" value="generate" disabled={pending} variant="outline" className="w-full">
       {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
       Generate Content with AI
     </Button>
@@ -57,9 +58,8 @@ export default function EditPostPage() {
   const isNewPost = slug === 'new';
   const post = useMemo(() => isNewPost ? null : getPostBySlug(slug), [slug, isNewPost]);
   
-  const [aiState, generateAction, isGenerating] = useActionState(generateBlogPostAction, { message: '', content: '' });
-  const [topic, setTopic] = useState('');
-  
+  const [aiState, formAction, isGenerating] = useActionState(generateBlogPostAction, { message: '', content: '' });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,6 +70,7 @@ export default function EditPostPage() {
       status: "Draft",
       tags: [],
       featuredImage: [],
+      topic: "",
     },
   });
 
@@ -96,6 +97,15 @@ export default function EditPostPage() {
   if (!isNewPost && !post) {
     return <div>Post not found.</div>;
   }
+  
+  const handleFormAction = (formData: FormData) => {
+    const action = (formData.get('action') as string) || 'submit';
+    if(action === 'generate'){
+        formAction(formData);
+    } else {
+        form.handleSubmit(onSubmit)(form.getValues());
+    }
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log("Blog Post Data:", values);
@@ -118,7 +128,7 @@ export default function EditPostPage() {
         </div>
       </div>
        <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form action={handleFormAction} className="space-y-8">
             <div className="grid lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
@@ -148,21 +158,24 @@ export default function EditPostPage() {
                                     <CardDescription>Provide a topic and let AI draft the content for you.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                     <form action={generateAction}>
-                                        <div className="flex gap-2">
-                                            <Input 
-                                                name="topic"
-                                                value={topic}
-                                                onChange={(e) => setTopic(e.target.value)}
-                                                placeholder="e.g., A 3-day itinerary for Luxor"
-                                                disabled={isGenerating}
-                                            />
-                                            <GenerateButton />
-                                        </div>
-                                         {aiState.message && aiState.message !== 'Success' && (
-                                            <p className="text-sm text-destructive mt-2">{aiState.message}</p>
-                                        )}
-                                    </form>
+                                    <div className="flex gap-2">
+                                        <FormField control={form.control} name="topic" render={({ field }) => (
+                                            <FormItem className="flex-grow">
+                                                <FormControl>
+                                                    <Input 
+                                                        {...field}
+                                                        placeholder="e.g., A 3-day itinerary for Luxor"
+                                                        disabled={isGenerating}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )} />
+                                        <GenerateButton />
+                                    </div>
+                                     {aiState.message && aiState.message !== 'Success' && (
+                                        <p className="text-sm text-destructive mt-2">{aiState.message}</p>
+                                    )}
                                 </CardContent>
                             </Card>
 
@@ -219,7 +232,7 @@ export default function EditPostPage() {
                             )} />
                         </CardContent>
                         <CardFooter className="flex justify-end">
-                            <Button type="submit">{isNewPost ? 'Create Post' : 'Save Changes'}</Button>
+                            <Button type="submit" name="action" value="submit">{isNewPost ? 'Create Post' : 'Save Changes'}</Button>
                         </CardFooter>
                     </Card>
                      <Card>
