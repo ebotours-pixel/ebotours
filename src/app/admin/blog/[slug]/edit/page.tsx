@@ -16,9 +16,10 @@ import { ArrowLeft, PlusCircle, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { getPostBySlug, getAuthors } from "@/lib/blog";
 import { Combobox } from "@/components/ui/combobox";
-import { useEffect, useMemo, useState, useActionState } from "react";
+import { useEffect, useMemo, useState, useActionState, useRef } from "react";
 import { generateBlogPostAction } from "@/app/actions";
 import { useFormStatus } from "react-dom";
+import { HtmlEditorToolbar } from "@/components/admin/html-editor-toolbar";
 
 const authors = getAuthors();
 const availableTags = [
@@ -60,6 +61,9 @@ export default function EditPostPage() {
   const post = useMemo(() => isNewPost ? null : getPostBySlug(slug), [slug, isNewPost]);
   
   const [aiState, formAction, isGenerating] = useActionState(generateBlogPostAction, { message: '', content: '' });
+  
+  const contentTextAreaRef = useRef<HTMLTextAreaElement>(null);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -201,7 +205,11 @@ export default function EditPostPage() {
                              <FormField control={form.control} name="content" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Content</FormLabel>
-                                    <FormControl><Textarea placeholder="Write your article here. Supports HTML." {...field} rows={15} /></FormControl>
+                                    <HtmlEditorToolbar
+                                        textAreaRef={contentTextAreaRef}
+                                        onContentChange={(newContent) => form.setValue('content', newContent, { shouldDirty: true, shouldValidate: true })}
+                                    />
+                                    <FormControl><Textarea placeholder="Write your article here. Supports HTML." {...field} ref={contentTextAreaRef} rows={15} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
