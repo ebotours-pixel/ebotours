@@ -44,6 +44,7 @@ export async function getAiSuggestions(prevState: SuggestionsState, formData: Fo
 // For AI Blog Post Generation
 const BlogPostActionInputSchema = z.object({
   topic: z.string().min(5, { message: 'Please enter a topic with at least 5 characters.' }),
+  keywords: z.string().optional(),
 });
 
 type BlogPostState = {
@@ -55,6 +56,7 @@ export async function generateBlogPostAction(prevState: BlogPostState, formData:
     try {
         const rawInput = {
             topic: formData.get('topic') as string,
+            keywords: formData.get('keywords') as string,
         };
 
         const validatedInput = BlogPostActionInputSchema.safeParse(rawInput);

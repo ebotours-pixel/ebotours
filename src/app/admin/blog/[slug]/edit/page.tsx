@@ -39,14 +39,15 @@ const formSchema = z.object({
   tags: z.array(z.string()).optional(),
   featuredImage: z.array(z.any()).optional(),
   topic: z.string().optional(),
+  keywords: z.string().optional(),
 });
 
 function GenerateButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" name="action" value="generate" disabled={pending} variant="outline" className="w-full">
+    <Button type="submit" name="action" value="generate" disabled={pending} variant="outline" className="w-full mt-2 md:mt-0 md:w-auto">
       {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-      Generate Content with AI
+      Generate Content
     </Button>
   );
 }
@@ -71,6 +72,7 @@ export default function EditPostPage() {
       tags: [],
       featuredImage: [],
       topic: "",
+      keywords: "",
     },
   });
 
@@ -155,12 +157,13 @@ export default function EditPostPage() {
                              <Card className="bg-muted/50">
                                 <CardHeader>
                                     <CardTitle className="text-lg">AI Content Generator</CardTitle>
-                                    <CardDescription>Provide a topic and let AI draft the content for you.</CardDescription>
+                                    <CardDescription>Provide a topic and keywords, and let AI draft the content for you.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex gap-2">
+                                    <div className="grid gap-4">
                                         <FormField control={form.control} name="topic" render={({ field }) => (
-                                            <FormItem className="flex-grow">
+                                            <FormItem>
+                                                <FormLabel>Topic</FormLabel>
                                                 <FormControl>
                                                     <Input 
                                                         {...field}
@@ -171,6 +174,22 @@ export default function EditPostPage() {
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
+                                         <FormField control={form.control} name="keywords" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Keywords (optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input 
+                                                        {...field}
+                                                        placeholder="e.g., family friendly, budget, historical sites"
+                                                        disabled={isGenerating}
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>Comma-separated keywords to guide the AI.</FormDescription>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )} />
+                                    </div>
+                                    <div className="flex justify-end mt-4">
                                         <GenerateButton />
                                     </div>
                                      {aiState.message && aiState.message !== 'Success' && (

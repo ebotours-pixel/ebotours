@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const GenerateBlogPostInputSchema = z.object({
   topic: z.string().describe('The topic or title for the blog post.'),
+  keywords: z.string().optional().describe('A comma-separated list of keywords to include in the post.'),
 });
 export type GenerateBlogPostInput = z.infer<typeof GenerateBlogPostInputSchema>;
 
@@ -34,13 +35,17 @@ const prompt = ai.definePrompt({
 
 Generate a full blog post based on the following topic. The post should be at least 500 words long and formatted in Markdown.
 
-It should include:
+It must include:
 - An engaging introduction that hooks the reader.
 - Several paragraphs that explore the topic in detail.
 - Use headings and bullet points where appropriate to make the content easy to read.
 - A concluding paragraph that summarizes the key points and encourages readers to book a tour.
+- At least one or two backlinks to our tours page, like this: "[Check out our amazing tours!](/tours)".
 
-Topic: {{{topic}}}`,
+Topic: {{{topic}}}
+{{#if keywords}}
+Keywords to include: {{{keywords}}}
+{{/if}}`,
 });
 
 const generateBlogPostFlow = ai.defineFlow(
