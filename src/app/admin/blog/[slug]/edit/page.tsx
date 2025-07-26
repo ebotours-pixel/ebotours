@@ -201,7 +201,7 @@ export default function EditPostPage() {
                              <FormField control={form.control} name="content" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Content</FormLabel>
-                                    <FormControl><Textarea placeholder="Write your article here. Supports Markdown." {...field} rows={15} /></FormControl>
+                                    <FormControl><Textarea placeholder="Write your article here. Supports HTML." {...field} rows={15} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />

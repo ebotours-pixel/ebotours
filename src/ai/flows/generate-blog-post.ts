@@ -19,7 +19,7 @@ const GenerateBlogPostInputSchema = z.object({
 export type GenerateBlogPostInput = z.infer<typeof GenerateBlogPostInputSchema>;
 
 const GenerateBlogPostOutputSchema = z.object({
-  content: z.string().describe('The generated blog post content, formatted in Markdown.'),
+  content: z.string().describe('The generated blog post content, formatted in HTML.'),
 });
 export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema>;
 
@@ -33,14 +33,14 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateBlogPostOutputSchema},
   prompt: `You are an expert travel blogger writing for "Wanderlust Hub", a company specializing in tours of Egypt. Your tone is engaging, informative, and inspiring.
 
-Generate a full blog post based on the following topic. The post should be at least 500 words long and formatted in Markdown.
+Generate a full blog post based on the following topic. The post should be at least 500 words long and formatted in HTML.
 
 It must include:
 - An engaging introduction that hooks the reader.
-- Several paragraphs that explore the topic in detail.
-- Use headings and bullet points where appropriate to make the content easy to read.
+- Several paragraphs exploring the topic, using <p> tags.
+- Use headings like <h2> and <h3> where appropriate to structure the content. Use <strong> for bold text and <ul>/<li> for lists.
 - A concluding paragraph that summarizes the key points and encourages readers to book a tour.
-- At least one or two backlinks to our tours page, like this: "[Check out our amazing tours!](/tours)".
+- At least one or two backlinks to our tours page, like this: "<a href="/tours">Check out our amazing tours!</a>".
 
 Topic: {{{topic}}}
 {{#if keywords}}
