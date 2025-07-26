@@ -1,5 +1,4 @@
 
-
 export type PriceTier = {
   minPeople: number;
   maxPeople: number | null; // null for 'and up'
@@ -65,3 +64,16 @@ export type Customer = {
     createdAt: string; // ISO string format for dates
     bookings: Booking[];
 }
+
+export type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  content: string;
+  author: string;
+  status: "Published" | "Draft";
+  createdAt: string; // ISO date string
+  updatedAt: string; // ISO date string
+  featuredImage: string;
+  tags: string[];
+};
