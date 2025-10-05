@@ -1,13 +1,13 @@
 
-import { getTours } from "@/lib/tours";
+import { getTours } from "@/lib/supabase/tours";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Settings } from "lucide-react";
 import Link from "next/link";
 
-export default function ToursPage() {
-  const tours = getTours();
+export default async function ToursPage() {
+  const tours = await getTours();
 
   return (
     <div className="space-y-6">

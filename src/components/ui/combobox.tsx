@@ -1,5 +1,4 @@
-
-"use client"
+'use client'
 
 import * as React from "react"
 import { Check, ChevronsUpDown, X } from "lucide-react"
@@ -43,57 +42,50 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const handleSelect = (value: string) => {
-    onChange(
-      selected.includes(value)
-        ? selected.filter((item) => item !== value)
-        : [...selected, value]
-    )
+  const handleToggle = (value: string) => {
+    const isSelected = selected.includes(value);
+    if (isSelected) {
+      onChange(selected.filter((s) => s !== value));
+    } else {
+      onChange([...selected, value]);
+    }
   }
-
-  const handleRemove = (e: React.MouseEvent, valueToRemove: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onChange(selected.filter(item => item !== valueToRemove));
-  }
-  
-  const selectedOptions = selected
-    .map(value => options.find(option => option.value === value))
-    .filter((option): option is ComboboxOption => option !== undefined);
-
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn("w-full justify-between h-auto min-h-10", className)}
-          >
-            <div className="flex gap-1 flex-wrap">
-              {selectedOptions.length > 0 ? (
-                selectedOptions.map((option) => (
-                    <Badge variant="secondary" key={option.value} className="mr-1">
-                        {option.label}
-                        <div 
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => { if(e.key === "Enter" || e.key === " ") handleRemove(e as any, option.value) }}
-                            onClick={(e) => handleRemove(e, option.value)}
-                            className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        >
-                            <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                        </div>
-                    </Badge>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between h-auto min-h-10", className)}
+          onClick={() => setOpen(!open)}
+        >
+          <div className="flex gap-1 flex-wrap">
+            {selected.length > 0 ? (
+              options
+                .filter((option) => selected.includes(option.value))
+                .map((option) => (
+                  <Badge
+                    variant="secondary"
+                    key={option.value}
+                    className="mr-1"
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent opening the popover
+                      handleToggle(option.value);
+                    }}
+                  >
+                    {option.label}
+                    <X className="ml-1 h-3 w-3" />
+                  </Badge>
                 ))
-              ) : (
-                <span className="text-muted-foreground font-normal">{placeholder}</span>
-              )}
-            </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+            ) : (
+              <span className="text-muted-foreground font-normal">{placeholder}</span>
+            )}
+          </div>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder="Search options..." />
@@ -101,21 +93,21 @@ export function Combobox({
             <CommandEmpty>No option found.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    handleSelect(currentValue)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => {
+                      handleToggle(option.value)
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>

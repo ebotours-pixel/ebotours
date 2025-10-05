@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getTours } from '@/lib/tours';
+import { getTours } from '@/lib/supabase/tours';
 import type { Tour } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { CountdownTimer } from '@/components/countdown-timer';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
+import { useRouter } from 'next/navigation';
 
 const categoryIcons = {
   "Adventure": <Mountain className="h-8 w-8 text-primary" />,
@@ -25,27 +25,6 @@ const categoryIcons = {
   "Family": <FerrisWheel className="h-8 w-8 text-primary" />,
   "Honeymoon": <Plane className="h-8 w-8 text-primary" />,
 };
-
-function LastMinuteOfferCard({ tour }: { tour: Tour }) {
-  return (
-    <Link href={`/tours/${tour.slug}`} className="block group relative rounded-lg overflow-hidden shadow-lg text-white">
-      <Image 
-        src={tour.images[0]}
-        alt={tour.name}
-        width={300}
-        height={400}
-        className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-        data-ai-hint={`${tour.destination} travel`}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="absolute top-2 left-2 bg-primary/80 text-primary-foreground px-2 py-1 text-xs font-bold rounded-md">-50% OFF</div>
-      <div className="absolute bottom-0 left-0 p-4">
-        <h3 className="font-bold text-lg">{tour.destination}</h3>
-        <p className="text-sm">${tour.priceTiers[0].pricePerAdult}</p>
-      </div>
-    </Link>
-  )
-}
 
 const testimonials = [
     {
@@ -102,30 +81,40 @@ const articles = [
   },
 ];
 
-const heroImages = [
-  {
-    src: 'https://images.unsplash.com/photo-1572252433829-d6a3c659d832?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8MTc1Mjg4MTM3Mnww&ixlib=rb-4.1.0&q=80&w=1080',
-    alt: 'Ancient Egyptian temples',
-    hint: 'Egypt travel'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8fDE3NTI4ODEzNzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    alt: 'Hot air balloons over Luxor',
-    hint: 'Egypt balloons'
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1552596455-1f6c44244246?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxFeWdpdCUyMHRyYXZlbHxlbnwwfHx8fDE3NTI4ODEzNzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    alt: 'The Nile river at sunset',
-    hint: 'Egypt nile'
-  }
-];
-
-import { useRouter } from 'next/navigation';
+function LastMinuteOfferCard({ tour }: { tour: Tour }) {
+  if (!tour || !tour.images || tour.images.length === 0) return null;
+  return (
+    <Link href={`/tours/${tour.slug}`} className="block group relative rounded-lg overflow-hidden shadow-lg text-white">
+      <Image 
+        src={tour.images[0]}
+        alt={tour.name}
+        width={300}
+        height={400}
+        className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+        data-ai-hint={`${tour.destination} travel`}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+      <div className="absolute top-2 left-2 bg-primary/80 text-primary-foreground px-2 py-1 text-xs font-bold rounded-md">-50% OFF</div>
+      <div className="absolute bottom-0 left-0 p-4">
+        <h3 className="font-bold text-lg">{tour.destination}</h3>
+        <p className="text-sm">${tour.priceTiers[0]?.pricePerAdult}</p>
+      </div>
+    </Link>
+  )
+}
 
 export default function Home() {
-  const tours = getTours();
+  const [tours, setTours] = React.useState<Tour[]>([]);
   const categories = ["Adventure", "Relaxation", "Cultural", "Culinary", "Family", "Honeymoon"];
   const egyptianDestinations = ["Cairo", "Luxor", "Aswan", "Sharm El Sheikh", "Hurghada", "Alexandria"];
+
+  React.useEffect(() => {
+    const fetchTours = async () => {
+      const fetchedTours = await getTours();
+      setTours(fetchedTours);
+    };
+    fetchTours();
+  }, []);
 
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -252,7 +241,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative h-full min-h-[400px]">
-            <Image src="https://images.unsplash.com/photo-1699115823831-cf1329dfc58f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhZHZlbnR1cmUlMjB0cmF2ZWx8ZW58MHx8fHwxNzUyNjIyOTA5fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Adventure travel" layout="fill" objectFit="cover" className="rounded-lg" data-ai-hint="adventure travel" />
+            <Image src="https://images.unsplash.com/photo-1699115823831-cf1329dfc58f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhZHZlbnR1cmUlMjB0cmF2ZWx8ZW58MHx8fHwxNzUyNjIyOTA5fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Adventure travel" fill objectFit="cover" className="rounded-lg" data-ai-hint="adventure travel" />
             <div className="absolute -bottom-8 -right-8 bg-primary text-white p-6 rounded-lg shadow-lg w-52 text-center">
               <p className="text-4xl font-bold">25+</p>
               <p>Years Of Experience</p>
@@ -290,7 +279,7 @@ export default function Home() {
               <Button className="mt-4">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </div>
             <div className="relative w-48 h-32 hidden md:block">
-              <Image src="https://placehold.co/200x150.png" alt="Travel items" data-ai-hint="travel suitcase" layout="fill" objectFit="contain" />
+              <Image src="https://placehold.co/200x150.png" alt="Travel items" data-ai-hint="travel suitcase" fill objectFit="contain" />
             </div>
           </div>
           <div className="bg-blue-900 text-white rounded-lg p-8 flex items-center justify-between overflow-hidden relative">
@@ -300,7 +289,7 @@ export default function Home() {
               <Button variant="secondary" className="mt-4">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </div>
              <div className="relative w-48 h-32 hidden md:block">
-              <Image src="https://placehold.co/200x150.png" alt="Flight items" data-ai-hint="airplane travel" layout="fill" objectFit="contain" />
+              <Image src="https://placehold.co/200x150.png" alt="Flight items" data-ai-hint="airplane travel" fill objectFit="contain" />
             </div>
           </div>
         </div>
@@ -397,7 +386,7 @@ export default function Home() {
         <Image
           src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
           alt="Woman in a boat on a lake with dramatic cliffs"
-          layout="fill"
+          fill
           objectFit="cover"
           className="object-cover"
           data-ai-hint="woman cliff lake"
@@ -425,7 +414,7 @@ export default function Home() {
           {articles.map((article, index) => (
             <Card key={index} className="overflow-hidden group">
               <div className="relative h-52">
-                <Image src={article.image} alt={article.title} layout="fill" objectFit="cover" className="transition-transform duration-500 group-hover:scale-110" data-ai-hint={article.aiHint} />
+                <Image src={article.image} alt={article.title} fill objectFit="cover" className="transition-transform duration-500 group-hover:scale-110" data-ai-hint={article.aiHint} />
               </div>
               <CardContent className="p-6 space-y-3">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">

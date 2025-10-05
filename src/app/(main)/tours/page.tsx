@@ -1,11 +1,11 @@
 'use client'
 
 import React from 'react';
-import { getTours } from '@/lib/tours';
+import { getTours } from '@/lib/supabase/tours';
 import { TourCard } from '@/components/tour-card';
 
-export default function AllToursPage() {
-  const tours = getTours();
+export default async function AllToursPage() {
+  const tours = await getTours();
 
   return (
     <div className="container mx-auto px-4 py-12">
