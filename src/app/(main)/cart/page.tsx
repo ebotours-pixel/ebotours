@@ -4,7 +4,7 @@ import React, { useActionState, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useFormStatus } from 'react-dom';
-import { useCart } from '@/hooks/use-cart.tsx';
+import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -62,9 +62,14 @@ export default function CartPage() {
                 {item.productType === 'tour' ? (
                   <Image src={(item.product as Tour).images[0]} alt={item.product.name} width={128} height={128} className="rounded-md object-cover h-32 w-32" data-ai-hint={`${(item.product as Tour).destination} landscape`} />
                 ) : (
-                  <div className="h-32 w-32 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-                    <Lightbulb className="h-16 w-16" />
-                  </div>
+                  <Image 
+                    src={(item.product as UpsellItem).imageUrl || '/placeholder-upsell.png'} 
+                    alt={item.product.name} 
+                    width={128} 
+                    height={128} 
+                    className="rounded-md object-cover h-32 w-32" 
+                    data-ai-hint={`${item.product.name} service`} 
+                  />
                 )}
                 <div className="ml-4 flex-grow">
                   <h2 className="font-bold text-lg">{item.product.name}</h2>

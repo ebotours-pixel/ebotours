@@ -51,8 +51,37 @@ export async function getUpsellItemById(id: string): Promise<UpsellItem | null> 
   return toCamelCase(data) as UpsellItem;
 }
 
-export async function addUpsellItem(formData: Omit<UpsellItem, 'id' | 'createdAt'>) {
+async function handleImageUpload(images: any[] | undefined, existingImageUrl?: string): Promise<string | undefined> {
   const supabase = createClient();
+  let imageUrl: string | undefined = existingImageUrl;
+
+  if (images && images.length > 0) {
+    const file = images[0] as File;
+    if (file.name && file.size) { // Check if it's a new file object
+      const filePath = `public/upsell-items/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('tours') // Using the existing 'tours' bucket as requested
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Error uploading upsell item image:', uploadError);
+        throw new Error('Failed to upload upsell item image.');
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('tours')
+        .getPublicUrl(filePath);
+      
+      imageUrl = urlData.publicUrl;
+    }
+  }
+  return imageUrl;
+}
+
+export async function addUpsellItem(formData: Omit<UpsellItem, 'id' | 'createdAt' | 'imageUrl'> & { images?: any[] }) {
+  const supabase = createClient();
+
+  const imageUrl = await handleImageUpload(formData.images);
 
   const { error } = await supabase
     .from('upsell_items')
@@ -62,6 +91,7 @@ export async function addUpsellItem(formData: Omit<UpsellItem, 'id' | 'createdAt
       price: formData.price,
       type: formData.type,
       related_tour_id: formData.relatedTourId,
+      image_url: imageUrl, // Store the uploaded image URL
       is_active: formData.isActive,
     });
 
@@ -74,8 +104,10 @@ export async function addUpsellItem(formData: Omit<UpsellItem, 'id' | 'createdAt
   redirect('/admin/upsell-items');
 }
 
-export async function updateUpsellItem(id: string, formData: Omit<UpsellItem, 'id' | 'createdAt'>) {
+export async function updateUpsellItem(id: string, formData: Omit<UpsellItem, 'id' | 'createdAt' | 'imageUrl'> & { images?: any[], imageUrl?: string }) {
   const supabase = createClient();
+
+  const imageUrl = await handleImageUpload(formData.images, formData.imageUrl); // Pass existing URL
 
   const { error } = await supabase
     .from('upsell_items')
@@ -85,6 +117,7 @@ export async function updateUpsellItem(id: string, formData: Omit<UpsellItem, 'i
       price: formData.price,
       type: formData.type,
       related_tour_id: formData.relatedTourId,
+      image_url: imageUrl, // Update with new or existing URL
       is_active: formData.isActive,
     })
     .eq('id', id);
@@ -100,6 +133,18 @@ export async function updateUpsellItem(id: string, formData: Omit<UpsellItem, 'i
 
 export async function deleteUpsellItem(id: string) {
   const supabase = createClient();
+
+  // Optional: Delete image from storage if it exists
+  const { data: itemToDelete } = await supabase.from('upsell_items').select('image_url').eq('id', id).single();
+  if (itemToDelete?.image_url) {
+    const filePath = itemToDelete.image_url.split('public/')[1]; // Extract path after 'public/'
+    if (filePath) {
+      const { error: deleteError } = await supabase.storage.from('tours').remove([filePath]);
+      if (deleteError) {
+        console.warn('Failed to delete old upsell item image from storage:', deleteError);
+      }
+    }
+  }
 
   const { error } = await supabase
     .from('upsell_items')

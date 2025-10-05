@@ -37,7 +37,8 @@ export type UpsellItem = {
   description?: string;
   price: number;
   type: 'service' | 'tour_addon';
-  relatedTourId?: string;
+  relatedTourId?: string; // uuid
+  imageUrl?: string; // New: URL for the upsell item image
   isActive: boolean;
   createdAt: string;
 };

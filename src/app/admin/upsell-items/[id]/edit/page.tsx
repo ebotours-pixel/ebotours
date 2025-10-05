@@ -1,6 +1,6 @@
-import { getUpsellItemById, updateUpsellItem } from "@/lib/supabase/upsell-items";
-import { UpsellItemForm } from "@/components/admin/upsell-item-form";
+import { getUpsellItemById } from "@/lib/supabase/upsell-items";
 import { notFound } from "next/navigation";
+import { UpsellItemEditClient } from "./upsell-item-edit-client";
 
 interface EditUpsellItemPageProps {
   params: {
@@ -16,6 +16,6 @@ export default async function EditUpsellItemPage({ params }: EditUpsellItemPageP
   }
 
   return (
-    <UpsellItemForm initialData={upsellItem} onSubmit={(data) => updateUpsellItem(params.id, data)} formType="edit" />
+    <UpsellItemEditClient initialData={upsellItem} id={params.id} />
   );
 }

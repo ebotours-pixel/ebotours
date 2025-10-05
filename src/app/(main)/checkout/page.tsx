@@ -162,7 +162,7 @@ export default function CheckoutPage() {
                  itemTotal = ((item.adults ?? 0) * priceTier.pricePerAdult) + ((item.children ?? 0) * priceTier.pricePerChild);
                } else if (item.productType === 'upsell') {
                  const upsellItem = item.product as any;
-                 productImage = '/placeholder-upsell.png'; // Placeholder for upsell items
+                 productImage = upsellItem.imageUrl || '/placeholder-upsell.png'; // Use upsell item image or generic placeholder
                  productDescription = upsellItem.description || 'Additional Service';
                  itemTotal = upsellItem.price * (item.quantity ?? 1);
                }

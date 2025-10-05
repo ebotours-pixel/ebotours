@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft } from "lucide-react";
+import { ImageUploader } from "@/components/admin/image-uploader";
 import type { UpsellItem, Tour } from "@/types";
 import { useEffect, useState } from "react";
 import { getTours } from "@/lib/supabase/tours";
@@ -22,6 +23,7 @@ const formSchema = z.object({
   price: z.coerce.number().min(0, "Price must be positive."),
   type: z.enum(["service", "tour_addon"], { errorMap: () => ({ message: "Please select a type." }) }),
   relatedTourId: z.string().nullable().optional(),
+  images: z.array(z.any()).optional(), // For image upload
   isActive: z.boolean().default(true),
 });
 
@@ -46,13 +48,15 @@ export function UpsellItemForm({ initialData, onSubmit, formType }: UpsellItemFo
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
         ...initialData,
-        relatedTourId: initialData.relatedTourId || null, // Ensure null for select
+        relatedTourId: initialData.relatedTourId || null,
+        images: initialData.imageUrl ? [initialData.imageUrl] : [], // Pre-populate if image exists
     } : {
       name: "",
       description: "",
       price: 0,
       type: "service",
       relatedTourId: null,
+      images: [],
       isActive: true,
     },
   });
@@ -126,14 +130,14 @@ export function UpsellItemForm({ initialData, onSubmit, formType }: UpsellItemFo
                     <FormField control={form.control} name="relatedTourId" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Related Tour (Optional)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value || null}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a related tour" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value={null}>None</SelectItem>
+                                    <SelectItem value="">None</SelectItem>
                                     {tours.map(tour => (
                                         <SelectItem key={tour.id} value={tour.id}>{tour.name}</SelectItem>
                                     ))}
@@ -143,6 +147,29 @@ export function UpsellItemForm({ initialData, onSubmit, formType }: UpsellItemFo
                             <FormMessage />
                         </FormItem>
                     )} />
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Item Image</CardTitle>
+                            <CardDescription>Upload an image for the upsell item.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={form.control}
+                                name="images"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormControl>
+                                            <ImageUploader 
+                                                value={field.value || []}
+                                                onChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
                     <FormField control={form.control} name="isActive" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                             <div className="space-y-0.5">
