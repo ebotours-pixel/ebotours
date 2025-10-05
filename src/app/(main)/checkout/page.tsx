@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/hooks/use-cart.tsx";
+import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,12 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { format } from "date-fns";
 
+import { createBooking } from "@/lib/supabase/bookings";
+
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
-  address: z.string().min(10, "Address is required."),
-  city: z.string().min(2, "City is required."),
-  country: z.string().min(2, "Country is required."),
+  phoneNumber: z.string().min(10, "Phone number is required.").regex(/^\+?[0-9\s\-()]*$/, "Invalid phone number format."),
+  nationality: z.string().min(2, "Nationality is required."),
 });
 
 export default function CheckoutPage() {
@@ -32,26 +33,47 @@ export default function CheckoutPage() {
     defaultValues: {
       name: "",
       email: "",
-      address: "",
-      city: "",
-      country: "",
+      phoneNumber: "",
+      nationality: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Order placed:", {
-      ...values,
-      items: cartItems,
-      total: getCartTotal(),
-    });
-    
-    toast({
-      title: "Order Placed!",
-      description: "Thank you for your purchase. A confirmation has been sent to your email.",
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is Empty",
+        description: "Please add items to your cart before placing an order.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    clearCart();
-    router.push("/checkout/success");
+    try {
+      await createBooking({
+        customerName: values.name,
+        customerEmail: values.email,
+        phoneNumber: values.phoneNumber,
+        nationality: values.nationality,
+        cartItems: cartItems,
+        totalPrice: getCartTotal(),
+      });
+      
+      toast({
+        title: "Order Placed!",
+        description: "Thank you for your purchase. A confirmation has been sent to your email.",
+      });
+
+      clearCart();
+      router.push("/checkout/success");
+
+    } catch (error) {
+      console.error("Error placing order:", error);
+      toast({
+        title: "Order Failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   if (cartItems.length === 0) {
@@ -74,7 +96,7 @@ export default function CheckoutPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <CardHeader>
-                <CardTitle>Shipping Information</CardTitle>
+                <CardTitle>Customer Information</CardTitle>
                 <CardDescription>Enter your details to complete the purchase.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -92,32 +114,23 @@ export default function CheckoutPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="address" render={({ field }) => (
+                <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl><Input placeholder="123 Adventure St" {...field} /></FormControl>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl><Input placeholder="+1 (555) 123-4567" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="city" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl><Input placeholder="Travelville" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="country" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl><Input placeholder="Wanderland" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                </div>
+                <FormField control={form.control} name="nationality" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nationality</FormLabel>
+                    <FormControl><Input placeholder="e.g., American, Egyptian" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" size="lg">Place Order</Button>
+                <Button type="submit" className="w-full" size="lg" disabled={form.formState.isSubmitting}>Place Order</Button>
               </CardFooter>
             </form>
           </Form>

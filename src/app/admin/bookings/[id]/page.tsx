@@ -1,27 +1,25 @@
-
-"use client"
-
-import { useParams, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getBookingById } from '@/lib/bookings';
-import { getTourById } from '@/lib/tours';
+import { getBookingById } from '@/lib/supabase/bookings';
+import { notFound } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Mail, Calendar, Hash, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Mail, User, Users, Tag, Phone, Globe } from 'lucide-react';
+import Link from 'next/link';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-export default function BookingDetailsPage() {
-  const params = useParams();
-  const bookingId = params.id as string;
-  const booking = getBookingById(bookingId);
-  
-  if (!booking) {
-    return notFound();
-  }
+interface BookingDetailsPageProps {
+  params: {
+    id: string;
+  };
+}
 
-  const tour = getTourById(booking.tourSlug);
+export default async function BookingDetailsPage({ params }: BookingDetailsPageProps) {
+  const booking = await getBookingById(params.id);
+
+  if (!booking) {
+    notFound();
+  }
 
   return (
     <div className="space-y-6">
@@ -34,121 +32,106 @@ export default function BookingDetailsPage() {
         </Button>
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Booking Details</h2>
-          <p className="text-muted-foreground">Detailed view of booking #{booking.id}.</p>
+          <p className="text-muted-foreground">
+            Details for booking ID: {booking.id}
+          </p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 grid gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Booking Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Hash /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Booking ID</p>
-                            <p className="font-semibold">{booking.id}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Calendar /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Booking Date</p>
-                            <p className="font-semibold">{format(new Date(booking.bookingDate), 'PPP')}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"><DollarSign /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Total Price</p>
-                            <p className="font-semibold text-lg">${booking.totalPrice.toLocaleString()}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Users /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Guests</p>
-                            <p className="font-semibold">{booking.adults} Adults, {booking.children} Children</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Customer Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-primary" />
+              <p className="text-lg font-medium">{booking.customerName}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary" />
+              <p className="text-muted-foreground">{booking.customerEmail}</p>
+            </div>
+            {booking.phoneNumber && (
+              <div className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-primary" />
+                <p className="text-muted-foreground">{booking.phoneNumber}</p>
+              </div>
+            )}
+            {booking.nationality && (
+              <div className="flex items-center gap-3">
+                <Globe className="h-5 w-5 text-primary" />
+                <p className="text-muted-foreground">{booking.nationality}</p>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-primary" />
+              <p className="text-muted-foreground">Booked on: {format(new Date(booking.bookingDate), 'PPP')}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Tag className="h-5 w-5 text-primary" />
+              <Badge 
+                variant={
+                  booking.status === "Confirmed" ? "default" : 
+                  booking.status === "Pending" ? "secondary" : 
+                  "destructive"
+                } 
+                className={cn(
+                    booking.status === "Confirmed" && "bg-green-100 text-green-800",
+                    booking.status === "Pending" && "bg-yellow-100 text-yellow-800",
+                    booking.status === "Cancelled" && "bg-red-100 text-red-800"
+                )}
+              >
+                {booking.status}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Tour Details</CardTitle>
-                    <CardDescription>
-                        Information about the booked tour. 
-                        <Button variant="link" asChild className="p-0 ml-1 h-auto">
-                            <Link href={`/tours/${booking.tourSlug}`} target="_blank">View on site</Link>
-                        </Button>
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div>
-                        <p className="text-sm text-muted-foreground">Tour Name</p>
-                        <p className="font-semibold">{booking.tourName}</p>
-                    </div>
-                     <div>
-                        <p className="text-sm text-muted-foreground">Destination</p>
-                        <p className="font-semibold">{tour?.destination}</p>
-                    </div>
-                     <div>
-                        <p className="text-sm text-muted-foreground">Duration</p>
-                        <p className="font-semibold">{tour?.durationText ?? `${tour?.duration} days`}</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-
-        <div className="lg:col-span-1 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Badge 
-                        variant={
-                            booking.status === "Confirmed" ? "default" : 
-                            booking.status === "Pending" ? "secondary" : 
-                            "destructive"
-                        } 
-                        className={cn(
-                            "text-lg w-full justify-center py-2",
-                            booking.status === "Confirmed" && "bg-green-100 text-green-800",
-                            booking.status === "Pending" && "bg-yellow-100 text-yellow-800",
-                            booking.status === "Cancelled" && "bg-red-100 text-red-800"
-                        )}
-                    >
-                      {booking.status}
-                    </Badge>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Customer Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground"><User className="h-5 w-5" /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Name</p>
-                            <p className="font-semibold">{booking.customerName}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground"><Mail className="h-5 w-5" /></div>
-                        <div>
-                            <p className="text-sm text-muted-foreground">Email</p>
-                            <p className="font-semibold">{booking.customerEmail}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Booking Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Total Price:</span>
+              <span className="text-xl font-bold text-primary">{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(booking.totalPrice)}</span>
+            </div>
+            <CardDescription>This booking includes {booking.bookingItems.length} tour(s).</CardDescription>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tours in this Booking</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {booking.bookingItems.map((item) => (
+              <div key={item.id} className="border rounded-md p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <Link href={`/tours/${item.tours?.slug}`} className="text-lg font-semibold text-primary hover:underline">
+                    {item.tours?.name || 'Unknown Tour'}
+                  </Link>
+                  <p className="text-muted-foreground text-sm">Tour ID: {item.tourId}</p>
+                  {item.itemDate && <p className="text-muted-foreground text-sm">Date: {format(new Date(item.itemDate), 'PPP')}</p>}
+                </div>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>{item.adults} Adults, {item.children} Children</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.price)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

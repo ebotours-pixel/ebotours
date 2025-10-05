@@ -85,14 +85,7 @@ export function DataTable<TData, TValue>({
             }
             className="max-w-sm"
             />
-            <Input
-            placeholder="Filter by tour name..."
-            value={(table.getColumn("tourName")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-                table.getColumn("tourName")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-            />
+
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="ml-auto">

@@ -81,14 +81,18 @@ export const columns = ({ onUpdateStatus, onDelete }: ColumnsProps): ColumnDef<B
     }
   },
   {
-    accessorKey: "tourName",
-    header: "Tour",
+    accessorKey: "bookingItems",
+    header: "Tours",
      cell: ({ row }) => {
-        const tourSlug = row.original.tourSlug;
+        const items = row.original.bookingItems;
+        if (!items || items.length === 0) return <span className="text-muted-foreground">No items</span>;
+
         return (
-             <Link href={`/tours/${tourSlug}`} target="_blank" className="font-medium text-primary hover:underline">
-                {row.getValue("tourName")}
-            </Link>
+            <div className="flex flex-col">
+                {items.map(item => (
+                    <span key={item.id}>{item.tours?.name || 'Unknown Tour'}</span>
+                ))}
+            </div>
         )
      }
   },

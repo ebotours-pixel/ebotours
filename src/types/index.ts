@@ -40,18 +40,30 @@ export type CartItem = {
   date?: Date;
 };
 
+export type BookingItem = {
+  id: string;
+  bookingId: string;
+  tourId: string;
+  adults: number;
+  children: number;
+  price: number;
+  itemDate?: string; // New: specific date for this booking item
+  tours?: { // This will be populated by a join query
+    name: string;
+    slug: string;
+  };
+};
+
 export type Booking = {
     id: string;
     customerName: string;
     customerEmail: string;
-    tourId: string;
-    tourName: string;
-    tourSlug: string;
+    phoneNumber?: string;
+    nationality?: string;
     bookingDate: string; // ISO string format for dates
-    adults: number;
-    children: number;
     totalPrice: number;
     status: "Confirmed" | "Pending" | "Cancelled";
+    bookingItems: BookingItem[];
 };
 
 export type Customer = {

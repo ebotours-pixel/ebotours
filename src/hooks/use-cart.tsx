@@ -38,21 +38,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartItems]);
 
   const addToCart = useCallback((tour: Tour, adults: number, children: number, date?: Date) => {
+    let toastMessage: { title: string; description: string; } | null = null;
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.tour.id === tour.id);
       if (existingItem) {
-        toast({ title: "Already in Cart", description: `${tour.name} is already in your cart.` });
+        toastMessage = { title: "Already in Cart", description: `${tour.name} is already in your cart.` };
         return prevItems;
       }
-      toast({ title: "Added to Cart", description: `${tour.name} has been added to your cart.` });
+      toastMessage = { title: "Added to Cart", description: `${tour.name} has been added to your cart.` };
       return [...prevItems, { tour, quantity: adults + children, adults, children, date }];
     });
+    if (toastMessage) {
+        toast(toastMessage);
+    }
   }, [toast]);
 
   const removeFromCart = useCallback((tourId: string) => {
     let tourName: string | undefined;
     setCartItems(prevItems => {
-        tourName = prevItems.find(item => item.tour.id === tourId)?.tour.name;
+        const itemToRemove = prevItems.find(item => item.tour.id === tourId);
+        if (itemToRemove) {
+            tourName = itemToRemove.tour.name;
+        }
         return prevItems.filter(item => item.tour.id !== tourId)
     });
     
