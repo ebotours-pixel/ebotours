@@ -1,12 +1,11 @@
+"use client";
 
-"use client"
-
-import * as React from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Post } from "@/types"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { Post } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +13,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
-import Link from "next/link"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export const columns: ColumnDef<Post>[] = [
   {
@@ -54,16 +53,19 @@ export const columns: ColumnDef<Post>[] = [
           Title
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const post = row.original
+      const post = row.original;
       return (
-         <Link href={`/admin/blog/${post.slug}/edit`} className="font-medium text-primary hover:underline">
+        <Link
+          href={`/admin/blog/${post.slug}/edit`}
+          className="font-medium text-primary hover:underline"
+        >
           {row.getValue("title")}
         </Link>
-      )
-    }
+      );
+    },
   },
   {
     accessorKey: "author",
@@ -75,12 +77,12 @@ export const columns: ColumnDef<Post>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge 
-            variant={status === "Published" ? "default" : "secondary"} 
-            className={cn(
-                status === "Published" && "bg-green-100 text-green-800",
-                status === "Draft" && "bg-gray-100 text-gray-800"
-            )}
+        <Badge
+          variant={status === "Published" ? "default" : "secondary"}
+          className={cn(
+            status === "Published" && "bg-green-100 text-green-800",
+            status === "Draft" && "bg-gray-100 text-gray-800",
+          )}
         >
           {status}
         </Badge>
@@ -91,14 +93,14 @@ export const columns: ColumnDef<Post>[] = [
     accessorKey: "createdAt",
     header: "Created At",
     cell: ({ row }) => {
-        const date = new Date(row.getValue("createdAt"));
-        return format(date, "PPP");
-    }
+      const date = new Date(row.getValue("createdAt"));
+      return format(date, "PPP");
+    },
   },
   {
     id: "actions",
     cell: ({ row }) => {
-      const post = row.original
+      const post = row.original;
 
       return (
         <DropdownMenu>
@@ -114,7 +116,9 @@ export const columns: ColumnDef<Post>[] = [
               <Link href={`/admin/blog/${post.slug}/edit`}>Edit Post</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/blog/${post.slug}`} target="_blank">View Post (Live)</Link>
+              <Link href={`/blog/${post.slug}`} target="_blank">
+                View Post (Live)
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
@@ -122,7 +126,7 @@ export const columns: ColumnDef<Post>[] = [
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];

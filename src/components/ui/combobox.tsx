@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import { Check, ChevronsUpDown, X } from "lucide-react"
+import * as React from "react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -12,25 +12,25 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { Badge } from "./badge"
+} from "@/components/ui/popover";
+import { Badge } from "./badge";
 
 export type ComboboxOption = {
-  value: string
-  label: string
-}
+  value: string;
+  label: string;
+};
 
 interface ComboboxProps {
-  options: ComboboxOption[]
-  selected: string[]
-  onChange: (value: string[]) => void
-  placeholder?: string
-  className?: string
+  options: ComboboxOption[];
+  selected: string[];
+  onChange: (value: string[]) => void;
+  placeholder?: string;
+  className?: string;
 }
 
 export function Combobox({
@@ -40,7 +40,7 @@ export function Combobox({
   placeholder = "Select options...",
   className,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   const handleToggle = (value: string) => {
     const isSelected = selected.includes(value);
@@ -49,7 +49,7 @@ export function Combobox({
     } else {
       onChange([...selected, value]);
     }
-  }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -80,7 +80,9 @@ export function Combobox({
                   </Badge>
                 ))
             ) : (
-              <span className="text-muted-foreground font-normal">{placeholder}</span>
+              <span className="text-muted-foreground font-normal">
+                {placeholder}
+              </span>
             )}
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -93,26 +95,28 @@ export function Combobox({
             <CommandEmpty>No option found.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={() => {
-                      handleToggle(option.value)
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selected.includes(option.value) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={() => {
+                    handleToggle(option.value);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selected.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0",
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
               ))}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

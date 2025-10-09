@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/middleware';
+import { type NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   const { supabase, response } = await createClient(request);
@@ -13,17 +13,17 @@ export async function middleware(request: NextRequest) {
 
   // If the user is trying to access an admin page and isn't logged in,
   // redirect them to the admin login page.
-  if (pathname.startsWith('/admin/') && pathname !== '/admin' && !session) {
+  if (pathname.startsWith("/admin/") && pathname !== "/admin" && !session) {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin';
+    url.pathname = "/admin";
     return NextResponse.redirect(url);
   }
 
   // If the user is logged in and tries to access the admin login page,
   // redirect them to the dashboard.
-  if (session && pathname === '/admin') {
+  if (session && pathname === "/admin") {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin/dashboard';
+    url.pathname = "/admin/dashboard";
     return NextResponse.redirect(url);
   }
 
@@ -39,6 +39,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };

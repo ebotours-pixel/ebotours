@@ -1,12 +1,10 @@
+"use client";
 
-
-"use client"
-
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Tour } from "@/types"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import type { ColumnDef } from "@tanstack/react-table";
+import type { Tour } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +12,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export const columns: ColumnDef<Tour>[] = [
   {
@@ -53,16 +51,20 @@ export const columns: ColumnDef<Tour>[] = [
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const tour = row.original
+      const tour = row.original;
       return (
-        <Link href={`/tours/${tour.slug}`} target="_blank" className="font-medium text-primary hover:underline">
+        <Link
+          href={`/tours/${tour.slug}`}
+          target="_blank"
+          className="font-medium text-primary hover:underline"
+        >
           {row.getValue("name")}
         </Link>
-      )
-    }
+      );
+    },
   },
   {
     accessorKey: "destination",
@@ -76,11 +78,13 @@ export const columns: ColumnDef<Tour>[] = [
       return (
         <div className="flex flex-wrap gap-1">
           {categories.map((category) => (
-            <Badge key={category} variant="outline">{category}</Badge>
+            <Badge key={category} variant="outline">
+              {category}
+            </Badge>
           ))}
         </div>
-      )
-    }
+      );
+    },
   },
   {
     accessorKey: "duration",
@@ -90,7 +94,7 @@ export const columns: ColumnDef<Tour>[] = [
     accessorKey: "priceTiers",
     header: "Starting Price",
     cell: ({ row }) => {
-      const priceTiers = row.getValue("priceTiers") as Tour['priceTiers'];
+      const priceTiers = row.getValue("priceTiers") as Tour["priceTiers"];
       const startingPrice = priceTiers[0]?.pricePerAdult;
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -106,7 +110,14 @@ export const columns: ColumnDef<Tour>[] = [
     cell: ({ row }) => {
       const isAvailable = row.getValue("availability");
       return (
-        <Badge variant={isAvailable ? "default" : "destructive"} className={cn(isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800")}>
+        <Badge
+          variant={isAvailable ? "default" : "destructive"}
+          className={cn(
+            isAvailable
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800",
+          )}
+        >
           {isAvailable ? "Available" : "Unavailable"}
         </Badge>
       );
@@ -115,7 +126,7 @@ export const columns: ColumnDef<Tour>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const tour = row.original
+      const tour = row.original;
 
       return (
         <DropdownMenu>
@@ -128,10 +139,12 @@ export const columns: ColumnDef<Tour>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-                <Link href={`/admin/tours/${tour.slug}/edit`}>Edit Tour</Link>
+              <Link href={`/admin/tours/${tour.slug}/edit`}>Edit Tour</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/tours/${tour.slug}`} target="_blank">View on Site</Link>
+              <Link href={`/tours/${tour.slug}`} target="_blank">
+                View on Site
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -139,12 +152,12 @@ export const columns: ColumnDef<Tour>[] = [
             >
               Copy Slug
             </DropdownMenuItem>
-             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
               Delete Tour
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
+      );
     },
   },
-]
+];

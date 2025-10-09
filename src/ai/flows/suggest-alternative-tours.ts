@@ -8,33 +8,43 @@
  * - SuggestAlternativeToursOutput - The return type for the suggestAlternativeTours function.
  */
 
-'use server';
+"use server";
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from "@/ai/genkit";
+import { z } from "genkit";
 
 const SuggestAlternativeToursInputSchema = z.object({
   tourDescriptions: z
     .array(z.string())
-    .describe('A list of descriptions of tours currently in the shopping cart.'),
+    .describe(
+      "A list of descriptions of tours currently in the shopping cart.",
+    ),
 });
-export type SuggestAlternativeToursInput = z.infer<typeof SuggestAlternativeToursInputSchema>;
+export type SuggestAlternativeToursInput = z.infer<
+  typeof SuggestAlternativeToursInputSchema
+>;
 
 const SuggestAlternativeToursOutputSchema = z.object({
   alternativeTours: z
     .array(z.string())
-    .describe('A list of suggested alternative tours based on the cart content.'),
+    .describe(
+      "A list of suggested alternative tours based on the cart content.",
+    ),
 });
-export type SuggestAlternativeToursOutput = z.infer<typeof SuggestAlternativeToursOutputSchema>;
+export type SuggestAlternativeToursOutput = z.infer<
+  typeof SuggestAlternativeToursOutputSchema
+>;
 
-export async function suggestAlternativeTours(input: SuggestAlternativeToursInput): Promise<SuggestAlternativeToursOutput> {
+export async function suggestAlternativeTours(
+  input: SuggestAlternativeToursInput,
+): Promise<SuggestAlternativeToursOutput> {
   return suggestAlternativeToursFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'suggestAlternativeToursPrompt',
-  input: {schema: SuggestAlternativeToursInputSchema},
-  output: {schema: SuggestAlternativeToursOutputSchema},
+  name: "suggestAlternativeToursPrompt",
+  input: { schema: SuggestAlternativeToursInputSchema },
+  output: { schema: SuggestAlternativeToursOutputSchema },
   prompt: `You are a tour suggestion expert. Given the following list of tours in the user\'s shopping cart, suggest alternative tours that the user might be interested in. Consider tours that are similar to the ones in the cart, or that would complement the existing tours.
 
 Tours in cart:
@@ -44,12 +54,12 @@ Tours in cart:
 
 const suggestAlternativeToursFlow = ai.defineFlow(
   {
-    name: 'suggestAlternativeToursFlow',
+    name: "suggestAlternativeToursFlow",
     inputSchema: SuggestAlternativeToursInputSchema,
     outputSchema: SuggestAlternativeToursOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input);
     return output!;
-  }
+  },
 );

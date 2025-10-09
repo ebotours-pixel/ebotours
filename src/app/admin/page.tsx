@@ -6,8 +6,21 @@ import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { KeyRound, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +69,7 @@ export default function AdminLoginPage() {
       // A successful sign-in will trigger the onAuthStateChange listener
       // in our middleware, which will handle the redirect.
       // We can also force a redirect to ensure the new state is picked up.
-      router.push('/admin/dashboard');
+      router.push("/admin/dashboard");
       router.refresh();
     }
   }
@@ -68,10 +81,14 @@ export default function AdminLoginPage() {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardHeader className="text-center">
               <div className="mx-auto bg-primary text-primary-foreground rounded-full h-16 w-16 flex items-center justify-center mb-4">
-                  <KeyRound className="h-8 w-8" />
+                <KeyRound className="h-8 w-8" />
               </div>
-              <CardTitle className="text-2xl font-headline">Admin Access</CardTitle>
-              <CardDescription>Please enter your credentials to access the dashboard.</CardDescription>
+              <CardTitle className="text-2xl font-headline">
+                Admin Access
+              </CardTitle>
+              <CardDescription>
+                Please enter your credentials to access the dashboard.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -81,7 +98,12 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="admin@example.com" {...field} disabled={isLoading}/>
+                      <Input
+                        type="email"
+                        placeholder="admin@example.com"
+                        {...field}
+                        disabled={isLoading}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -94,7 +116,12 @@ export default function AdminLoginPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} disabled={isLoading}/>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={isLoading}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,5 +1,4 @@
-
-'use server';
+"use server";
 
 /**
  * @fileOverview This file defines a Genkit flow for generating blog post content.
@@ -9,28 +8,37 @@
  * - GenerateBlogPostOutput - The return type for the generateBlogPost function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from "@/ai/genkit";
+import { z } from "genkit";
 
 const GenerateBlogPostInputSchema = z.object({
-  topic: z.string().describe('The topic or title for the blog post.'),
-  keywords: z.string().optional().describe('A comma-separated list of keywords to include in the post.'),
+  topic: z.string().describe("The topic or title for the blog post."),
+  keywords: z
+    .string()
+    .optional()
+    .describe("A comma-separated list of keywords to include in the post."),
 });
 export type GenerateBlogPostInput = z.infer<typeof GenerateBlogPostInputSchema>;
 
 const GenerateBlogPostOutputSchema = z.object({
-  content: z.string().describe('The generated blog post content, formatted in HTML.'),
+  content: z
+    .string()
+    .describe("The generated blog post content, formatted in HTML."),
 });
-export type GenerateBlogPostOutput = z.infer<typeof GenerateBlogPostOutputSchema>;
+export type GenerateBlogPostOutput = z.infer<
+  typeof GenerateBlogPostOutputSchema
+>;
 
-export async function generateBlogPost(input: GenerateBlogPostInput): Promise<GenerateBlogPostOutput> {
+export async function generateBlogPost(
+  input: GenerateBlogPostInput,
+): Promise<GenerateBlogPostOutput> {
   return generateBlogPostFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'generateBlogPostPrompt',
-  input: {schema: GenerateBlogPostInputSchema},
-  output: {schema: GenerateBlogPostOutputSchema},
+  name: "generateBlogPostPrompt",
+  input: { schema: GenerateBlogPostInputSchema },
+  output: { schema: GenerateBlogPostOutputSchema },
   prompt: `You are an expert travel blogger writing for "Wanderlust Hub", a company specializing in tours of Egypt. Your tone is engaging, informative, and inspiring.
 
 Generate a full blog post based on the following topic. The post should be at least 500 words long and formatted in HTML.
@@ -50,12 +58,12 @@ Keywords to include: {{{keywords}}}
 
 const generateBlogPostFlow = ai.defineFlow(
   {
-    name: 'generateBlogPostFlow',
+    name: "generateBlogPostFlow",
     inputSchema: GenerateBlogPostInputSchema,
     outputSchema: GenerateBlogPostOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input);
     return output!;
-  }
+  },
 );

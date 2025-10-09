@@ -6,12 +6,14 @@ export default async function BookingsPage() {
 
   return (
     <div className="space-y-6">
-       <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Bookings Management</h2>
-            <p className="text-muted-foreground">
-                Here's a list of all tour bookings from your customers.
-            </p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Bookings Management
+          </h2>
+          <p className="text-muted-foreground">
+            Here's a list of all tour bookings from your customers.
+          </p>
         </div>
       </div>
       <BookingsClient initialBookings={bookings} />

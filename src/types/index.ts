@@ -36,7 +36,7 @@ export type UpsellItem = {
   name: string;
   description?: string;
   price: number;
-  type: 'service' | 'tour_addon';
+  type: "service" | "tour_addon";
   relatedTourId?: string; // uuid
   imageUrl?: string; // New: URL for the upsell item image
   isActive: boolean;
@@ -52,11 +52,13 @@ export type BookingItem = {
   children: number;
   price: number;
   itemDate?: string;
-  tours?: { // from the join
+  tours?: {
+    // from the join
     name: string;
     slug: string;
   };
-  upsellItems?: { // New: from the join
+  upsellItems?: {
+    // New: from the join
     name: string;
     price: number;
   };
@@ -64,7 +66,7 @@ export type BookingItem = {
 
 export type CartItem = {
   product: Tour | UpsellItem;
-  productType: 'tour' | 'upsell';
+  productType: "tour" | "upsell";
   adults?: number; // Only for tours
   children?: number; // Only for tours
   date?: Date; // Only for tours
@@ -72,27 +74,27 @@ export type CartItem = {
 };
 
 export type Booking = {
-    id: string;
-    customerName: string;
-    customerEmail: string;
-    phoneNumber?: string;
-    nationality?: string;
-    bookingDate: string; // ISO string format for dates
-    totalPrice: number;
-    status: "Confirmed" | "Pending" | "Cancelled";
-    bookingItems: BookingItem[];
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  phoneNumber?: string;
+  nationality?: string;
+  bookingDate: string; // ISO string format for dates
+  totalPrice: number;
+  status: "Confirmed" | "Pending" | "Cancelled";
+  bookingItems: BookingItem[];
 };
 
 export type Customer = {
-    id: string;
-    name: string;
-    email: string;
-    source: "Booking" | "Newsletter";
-    totalBookings: number;
-    totalSpent: number;
-    createdAt: string; // ISO string format for dates
-    bookings: Booking[];
-}
+  id: string;
+  name: string;
+  email: string;
+  source: "Booking" | "Newsletter";
+  totalBookings: number;
+  totalSpent: number;
+  createdAt: string; // ISO string format for dates
+  bookings: Booking[];
+};
 
 export type Post = {
   id: string;

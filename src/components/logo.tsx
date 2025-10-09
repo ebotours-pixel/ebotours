@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plane } from 'lucide-react';
+import React from "react";
+import { Plane } from "lucide-react";
 
 export function Logo() {
   return (

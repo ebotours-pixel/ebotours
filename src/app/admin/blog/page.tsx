@@ -1,4 +1,3 @@
-
 import { getPosts } from "@/lib/blog";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
@@ -11,18 +10,18 @@ export default function BlogPage() {
 
   return (
     <div className="space-y-6">
-       <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Blog Management</h2>
-            <p className="text-muted-foreground">
-                Create, edit, and manage your blog posts here.
-            </p>
+          <h2 className="text-2xl font-bold tracking-tight">Blog Management</h2>
+          <p className="text-muted-foreground">
+            Create, edit, and manage your blog posts here.
+          </p>
         </div>
         <Button asChild>
-            <Link href="/admin/blog/new/edit">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Post
-            </Link>
+          <Link href="/admin/blog/new/edit">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Post
+          </Link>
         </Button>
       </div>
       <DataTable columns={columns} data={posts} />

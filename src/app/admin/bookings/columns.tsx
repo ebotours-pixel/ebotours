@@ -1,12 +1,11 @@
+"use client";
 
-"use client"
-
-import * as React from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { Booking } from "@/types"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { Booking } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,18 +23,21 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
-import Link from "next/link"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/alert-dialog";
+import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ColumnsProps {
-  onUpdateStatus: (bookingId: string, status: Booking['status']) => void;
+  onUpdateStatus: (bookingId: string, status: Booking["status"]) => void;
   onDelete: (bookingId: string) => void;
 }
 
-export const columns = ({ onUpdateStatus, onDelete }: ColumnsProps): ColumnDef<Booking>[] => [
+export const columns = ({
+  onUpdateStatus,
+  onDelete,
+}: ColumnsProps): ColumnDef<Booking>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -69,40 +71,43 @@ export const columns = ({ onUpdateStatus, onDelete }: ColumnsProps): ColumnDef<B
           Customer
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
-     cell: ({ row }) => {
+    cell: ({ row }) => {
       return (
         <div className="flex flex-col">
-            <span className="font-medium">{row.original.customerName}</span>
-            <span className="text-xs text-muted-foreground">{row.original.customerEmail}</span>
+          <span className="font-medium">{row.original.customerName}</span>
+          <span className="text-xs text-muted-foreground">
+            {row.original.customerEmail}
+          </span>
         </div>
-      )
-    }
+      );
+    },
   },
   {
     accessorKey: "bookingItems",
     header: "Tours",
-     cell: ({ row }) => {
-        const items = row.original.bookingItems;
-        if (!items || items.length === 0) return <span className="text-muted-foreground">No items</span>;
+    cell: ({ row }) => {
+      const items = row.original.bookingItems;
+      if (!items || items.length === 0)
+        return <span className="text-muted-foreground">No items</span>;
 
-        return (
-            <div className="flex flex-col">
-                {items.map(item => (
-                    <span key={item.id}>{item.tours?.name || 'Unknown Tour'}</span>
-                ))}
-            </div>
-        )
-     }
+      return (
+        <div className="flex flex-col">
+          {items.map((item) => (
+            <span key={item.id}>{item.tours?.name || "Unknown Tour"}</span>
+          ))}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "bookingDate",
     header: "Booking Date",
     cell: ({ row }) => {
-        const date = new Date(row.getValue("bookingDate"));
-        return format(date, "PPP");
-    }
+      const date = new Date(row.getValue("bookingDate"));
+      return format(date, "PPP");
+    },
   },
   {
     accessorKey: "totalPrice",
@@ -122,17 +127,19 @@ export const columns = ({ onUpdateStatus, onDelete }: ColumnsProps): ColumnDef<B
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge 
-            variant={
-                status === "Confirmed" ? "default" : 
-                status === "Pending" ? "secondary" : 
-                "destructive"
-            } 
-            className={cn(
-                status === "Confirmed" && "bg-green-100 text-green-800",
-                status === "Pending" && "bg-yellow-100 text-yellow-800",
-                status === "Cancelled" && "bg-red-100 text-red-800"
-            )}
+        <Badge
+          variant={
+            status === "Confirmed"
+              ? "default"
+              : status === "Pending"
+                ? "secondary"
+                : "destructive"
+          }
+          className={cn(
+            status === "Confirmed" && "bg-green-100 text-green-800",
+            status === "Pending" && "bg-yellow-100 text-yellow-800",
+            status === "Cancelled" && "bg-red-100 text-red-800",
+          )}
         >
           {status}
         </Badge>
@@ -142,64 +149,70 @@ export const columns = ({ onUpdateStatus, onDelete }: ColumnsProps): ColumnDef<B
   {
     id: "actions",
     cell: ({ row }) => {
-      const booking = row.original
+      const booking = row.original;
       const [isAlertOpen, setIsAlertOpen] = React.useState(false);
 
       return (
         <>
-        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                booking and remove its data from our servers.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  onDelete(booking.id);
-                  setIsAlertOpen(false);
-                }}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  booking and remove its data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    onDelete(booking.id);
+                    setIsAlertOpen(false);
+                  }}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/bookings/${booking.id}`}>View Booking Details</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onUpdateStatus(booking.id, 'Confirmed')}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/bookings/${booking.id}`}>
+                  View Booking Details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdateStatus(booking.id, "Confirmed")}
+              >
                 Mark as Confirmed
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onUpdateStatus(booking.id, 'Cancelled')}>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onUpdateStatus(booking.id, "Cancelled")}
+              >
                 Mark as Cancelled
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
                 className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 onClick={() => setIsAlertOpen(true)}
-            >
-              Delete Booking
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              >
+                Delete Booking
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
-      )
+      );
     },
   },
-]
+];

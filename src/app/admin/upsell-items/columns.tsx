@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import * as React from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { UpsellItem } from "@/types"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { UpsellItem } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,16 +23,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { MoreHorizontal, ArrowUpDown } from "lucide-react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/alert-dialog";
+import { MoreHorizontal, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface ColumnsProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-export const columns = ({ onDelete }: ColumnsProps): ColumnDef<UpsellItem>[] => [
+export const columns = ({
+  onDelete,
+}: ColumnsProps): ColumnDef<UpsellItem>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -66,7 +68,7 @@ export const columns = ({ onDelete }: ColumnsProps): ColumnDef<UpsellItem>[] => 
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
   },
   {
@@ -76,7 +78,7 @@ export const columns = ({ onDelete }: ColumnsProps): ColumnDef<UpsellItem>[] => 
       const type = row.getValue("type") as string;
       return (
         <Badge variant="outline" className="capitalize">
-          {type.replace('_', ' ')}
+          {type.replace("_", " ")}
         </Badge>
       );
     },
@@ -113,53 +115,55 @@ export const columns = ({ onDelete }: ColumnsProps): ColumnDef<UpsellItem>[] => 
 
       return (
         <>
-        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                upsell item and remove its data from our servers.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  await onDelete(upsellItem.id);
-                  setIsAlertOpen(false);
-                }}
-                className="bg-destructive hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  upsell item and remove its data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    await onDelete(upsellItem.id);
+                    setIsAlertOpen(false);
+                  }}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/upsell-items/${upsellItem.id}/edit`}>Edit</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/upsell-items/${upsellItem.id}/edit`}>
+                  Edit
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
                 className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 onClick={() => setIsAlertOpen(true)}
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </>
-      )
+      );
     },
   },
-]
+];

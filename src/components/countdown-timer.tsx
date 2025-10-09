@@ -1,7 +1,6 @@
+"use client";
 
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 export function CountdownTimer() {
   const [targetDate] = useState(() => {
@@ -42,15 +41,22 @@ export function CountdownTimer() {
   const timerComponents: JSX.Element[] = [];
 
   Object.keys(timeLeft).forEach((interval) => {
-    if (!timeLeft[interval as keyof typeof timeLeft] && timeLeft[interval as keyof typeof timeLeft] !== 0) {
+    if (
+      !timeLeft[interval as keyof typeof timeLeft] &&
+      timeLeft[interval as keyof typeof timeLeft] !== 0
+    ) {
       return;
     }
 
     timerComponents.push(
       <div key={interval} className="text-center">
-        <span className="text-4xl font-bold">{String(timeLeft[interval as keyof typeof timeLeft]).padStart(2, '0')}</span>
-        <span className="block text-sm uppercase text-white/70">{interval}</span>
-      </div>
+        <span className="text-4xl font-bold">
+          {String(timeLeft[interval as keyof typeof timeLeft]).padStart(2, "0")}
+        </span>
+        <span className="block text-sm uppercase text-white/70">
+          {interval}
+        </span>
+      </div>,
     );
   });
 

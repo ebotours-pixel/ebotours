@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 const data = [
   {
@@ -51,7 +51,7 @@ const data = [
     name: "Dec",
     total: Math.floor(Math.random() * 5000) + 1000,
   },
-]
+];
 
 export function OverviewChart() {
   return (
@@ -71,12 +71,8 @@ export function OverviewChart() {
           axisLine={false}
           tickFormatter={(value) => `$${value}`}
         />
-        <Bar
-          dataKey="total"
-          fill="hsl(var(--primary))"
-          radius={[4, 4, 0, 0]}
-        />
+        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
-  )
+  );
 }

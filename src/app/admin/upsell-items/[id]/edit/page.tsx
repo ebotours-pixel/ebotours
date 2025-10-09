@@ -8,14 +8,14 @@ interface EditUpsellItemPageProps {
   };
 }
 
-export default async function EditUpsellItemPage({ params }: EditUpsellItemPageProps) {
+export default async function EditUpsellItemPage({
+  params,
+}: EditUpsellItemPageProps) {
   const upsellItem = await getUpsellItemById(params.id);
 
   if (!upsellItem) {
     notFound();
   }
 
-  return (
-    <UpsellItemEditClient initialData={upsellItem} id={params.id} />
-  );
+  return <UpsellItemEditClient initialData={upsellItem} id={params.id} />;
 }

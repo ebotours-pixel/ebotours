@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { UpsellItemForm } from "@/components/admin/upsell-item-form";
 import { updateUpsellItem } from "@/lib/supabase/upsell-items";
@@ -9,12 +9,19 @@ interface UpsellItemEditClientProps {
   id: string;
 }
 
-export function UpsellItemEditClient({ initialData, id }: UpsellItemEditClientProps) {
+export function UpsellItemEditClient({
+  initialData,
+  id,
+}: UpsellItemEditClientProps) {
   const onSubmit = async (data: any) => {
     await updateUpsellItem(id, data);
   };
 
   return (
-    <UpsellItemForm initialData={initialData} onSubmit={onSubmit} formType="edit" />
+    <UpsellItemForm
+      initialData={initialData}
+      onSubmit={onSubmit}
+      formType="edit"
+    />
   );
 }
