@@ -11,7 +11,8 @@ interface EditTourPageProps {
 export default async function EditTourPage({
   params,
 }: EditTourPageProps) {
-  const tour = await getTourBySlug(params.slug);
+  const { slug } = params;
+  const tour = await getTourBySlug(slug);
 
   if (!tour) {
     notFound();

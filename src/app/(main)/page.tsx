@@ -337,7 +337,7 @@ export default function Home() {
               src="https://images.unsplash.com/photo-1699115823831-cf1329dfc58f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhZHZlbnR1cmUlMjB0cmF2ZWx8ZW58MHx8fHwxNzUyNjIyOTA5fDA&ixlib=rb-4.1.0&q=80&w=1080"
               alt="Adventure travel"
               fill
-              objectFit="cover"
+              style={{ objectFit: 'cover' }}
               className="rounded-lg"
               data-ai-hint="adventure travel"
             />
@@ -390,7 +390,7 @@ export default function Home() {
                 alt="Travel items"
                 data-ai-hint="travel suitcase"
                 fill
-                objectFit="contain"
+                style={{ objectFit: 'contain' }}
               />
             </div>
           </div>
@@ -410,7 +410,7 @@ export default function Home() {
                 alt="Flight items"
                 data-ai-hint="airplane travel"
                 fill
-                objectFit="contain"
+                style={{ objectFit: 'contain' }}
               />
             </div>
           </div>
@@ -535,7 +535,7 @@ export default function Home() {
           src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
           alt="Woman in a boat on a lake with dramatic cliffs"
           fill
-          objectFit="cover"
+          style={{ objectFit: 'cover' }}
           className="object-cover"
           data-ai-hint="woman cliff lake"
         />
@@ -575,7 +575,7 @@ export default function Home() {
                   src={article.image}
                   alt={article.title}
                   fill
-                  objectFit="cover"
+                  style={{ objectFit: 'cover' }}
                   className="transition-transform duration-500 group-hover:scale-110"
                   data-ai-hint={article.aiHint}
                 />

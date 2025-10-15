@@ -11,8 +11,9 @@ interface TourDetailsPageProps {
 export default async function TourDetailsPage({
   params,
 }: TourDetailsPageProps) {
+  const { id } = await Promise.resolve(params);
   // The slug is passed as `id` from the folder name [id]
-  const tour = await getTourBySlug(params.id);
+  const tour = await getTourBySlug(id);
 
   if (!tour) {
     notFound();
