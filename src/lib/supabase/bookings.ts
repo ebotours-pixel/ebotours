@@ -21,7 +21,7 @@ function toCamelCase(obj: any): any {
 }
 
 export async function getBookings(): Promise<Booking[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("bookings")
     .select("*, booking_items(*, tours(name, slug), upsell_items(name, price))")
@@ -35,7 +35,7 @@ export async function getBookings(): Promise<Booking[]> {
 }
 
 export async function getBookingById(id: string): Promise<Booking | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("bookings")
     .select("*, booking_items(*, tours(name, slug), upsell_items(name, price))")
@@ -55,7 +55,7 @@ export async function updateBookingStatus(
   bookingId: string,
   status: Booking["status"],
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("bookings")
     .update({ status })
@@ -70,7 +70,7 @@ export async function updateBookingStatus(
 }
 
 export async function deleteBooking(bookingId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("bookings")
     .delete()
@@ -94,7 +94,7 @@ interface CreateBookingData {
 }
 
 export async function createBooking(data: CreateBookingData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. Insert into bookings table
   const { data: bookingData, error: bookingError } = await supabase

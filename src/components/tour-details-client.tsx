@@ -83,7 +83,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
             <CarouselContent>
               {tour.images.map((image, index) => (
                 <CarouselItem key={index}>
-                  <div className="relative h-96 w-full">
+                  <div className="relative h-64 md:h-96 w-full">
                     <Image
                       src={image}
                       alt={`${tour.name} - image ${index + 1}`}
@@ -100,7 +100,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
             <CarouselNext className="absolute right-4" />
           </Carousel>
           <CardHeader>
-            <CardTitle className="font-headline text-4xl text-primary">
+            <CardTitle className="font-headline text-2xl md:text-4xl text-primary">
               {tour.name}
             </CardTitle>
           </CardHeader>
@@ -221,9 +221,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
         {tour.itinerary && tour.itinerary.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">
-                Itinerary
-              </CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">Itinerary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -253,9 +251,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
         {tour.cancellationPolicy && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">
-                Cancellation Policy
-              </CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">Cancellation Policy</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground text-sm">
@@ -268,13 +264,11 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
 
       {/* Right Column: Pricing & Booking */}
       <div className="lg:col-span-2">
-        <div className="sticky top-24 space-y-6">
+        <div className="lg:sticky top-24 space-y-6">
           {tour.highlights && (
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-3xl">
-                  Highlights
-                </CardTitle>
+                <CardTitle className="font-headline text-2xl md:text-3xl">Highlights</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 text-sm">
@@ -300,7 +294,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">Pricing</CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">Pricing</CardTitle>
             </CardHeader>
             <CardContent>
               <table className="w-full text-sm">
@@ -339,7 +333,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-3xl">
+              <CardTitle className="font-headline text-2xl md:text-3xl">
                 Book Your Spot
               </CardTitle>
             </CardHeader>

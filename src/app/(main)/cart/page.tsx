@@ -63,7 +63,7 @@ export default function CartPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="font-headline text-4xl font-bold text-primary mb-8">
+      <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary mb-8">
         Your Shopping Cart
       </h1>
 
@@ -87,11 +87,7 @@ export default function CartPage() {
               <Card key={item.product.id} className="flex items-center p-4">
                 {item.productType === "tour" ? (
                   <Image
-                    src={(item.product as Tour).images[0]}
-                    alt={item.product.name}
-                    width={128}
-                    height={128}
-                    className="rounded-md object-cover h-32 w-32"
+className="rounded-md object-cover h-24 w-24 sm:h-32 sm:w-32"
                     data-ai-hint={`${(item.product as Tour).destination} landscape`}
                   />
                 ) : (
@@ -103,7 +99,7 @@ export default function CartPage() {
                     alt={item.product.name}
                     width={128}
                     height={128}
-                    className="rounded-md object-cover h-32 w-32"
+                    className="rounded-md object-cover h-24 w-24 sm:h-32 sm:w-32"
                     data-ai-hint={`${item.product.name} service`}
                   />
                 )}
@@ -142,7 +138,7 @@ export default function CartPage() {
             ))}
           </div>
 
-          <div className="lg:col-span-1 space-y-6 sticky top-24">
+          <div className="lg:col-span-1 space-y-6 lg:sticky top-24">
             <Card>
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
