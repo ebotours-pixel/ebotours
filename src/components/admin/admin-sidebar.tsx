@@ -88,7 +88,7 @@ export function AdminSidebar({
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+                <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item, index) => (
               <SidebarMenuItem key={index}>
@@ -103,32 +103,33 @@ export function AdminSidebar({
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <div className="p-2 mt-auto">
-          <div className="p-2 flex items-center gap-2 rounded-md bg-muted">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="" alt="Admin" />
-              <AvatarFallback>
-                <UserCircle />
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col min-w-0">
-              <p className="font-medium text-sm truncate">{user.email}</p>
-              <button
-                onClick={handleSignOut}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors text-left"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between border-b bg-background/95 p-4 md:px-6 backdrop-blur-sm sticky top-0">
-          <div className="flex items-center gap-2">
+        <header className="flex h-16 items-center justify-between border-b bg-background/95 px-6 backdrop-blur-sm sticky top-0">
+          <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden" />
-            <h1 className="text-xl font-semibold">{getPageTitle(pathname)}</h1>
+            <h1 className="text-lg font-semibold">{getPageTitle(pathname)}</h1>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src="" alt="Admin" />
+                  <AvatarFallback>
+                    <UserCircle />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </SidebarInset>
