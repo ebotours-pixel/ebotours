@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/card";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Textarea } from "@/components/ui/textarea";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const formSchema = z
   .object({
@@ -63,6 +65,7 @@ const formSchema = z
   });
 
 export default function SettingsPage() {
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -85,9 +88,88 @@ export default function SettingsPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Settings Saved:", values);
-    alert("Settings saved! Check the console for the form data.");
+  useEffect(() => {
+    async function loadSettings() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("settings")
+        .select(
+          "agency_name, phone_number, contact_email, address, about_us, social_media, logo_url",
+        )
+        .eq("id", "settings-singleton")
+        .maybeSingle();
+      if (!error && data) {
+        setExistingLogoUrl((data as any).logo_url ?? null);
+        form.reset({
+          agencyName: (data as any).agency_name ?? "",
+          phoneNumber: (data as any).phone_number ?? "",
+          contactEmail: (data as any).contact_email ?? "",
+          address: (data as any).address ?? "",
+          logo: [],
+          aboutUs: (data as any).about_us ?? "",
+          socialMedia: (data as any).social_media ?? {
+            facebook: "",
+            twitter: "",
+            instagram: "",
+            linkedin: "",
+          },
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      }
+    }
+    loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const supabase = createClient();
+
+    // Handle logo upload if provided
+    let logoUrl: string | null = existingLogoUrl;
+    try {
+      const logoFile = values.logo && values.logo[0];
+      if (logoFile && logoFile instanceof File) {
+        const ext = logoFile.name.split(".").pop() || "png";
+        const path = `logos/agency-logo-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("cms")
+          .upload(path, logoFile, {
+            contentType: logoFile.type || "image/png",
+            upsert: true,
+          });
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("cms")
+            .getPublicUrl(path);
+          logoUrl = publicUrlData.publicUrl;
+        }
+      }
+    } catch (_) {
+      // ignore upload failure
+    }
+
+    const payload = {
+      id: "settings-singleton",
+      agency_name: values.agencyName,
+      phone_number: values.phoneNumber,
+      contact_email: values.contactEmail,
+      address: values.address,
+      about_us: values.aboutUs,
+      social_media: values.socialMedia,
+      logo_url: logoUrl,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from("settings")
+      .upsert(payload, { onConflict: "id" });
+    if (error) {
+      alert(`Failed to save settings: ${error.message}`);
+      return;
+    }
+    alert("Settings saved!");
   }
 
   return (

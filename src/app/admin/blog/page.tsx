@@ -1,12 +1,12 @@
-import { getPosts } from "@/lib/blog";
+import { getPosts } from "@/lib/supabase/blog";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 
-export default function BlogPage() {
-  const posts = getPosts();
+export default async function BlogPage() {
+  const posts = await getPosts();
 
   return (
     <div className="space-y-6">

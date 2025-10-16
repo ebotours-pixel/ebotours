@@ -29,6 +29,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { PlusCircle, Trash2 } from "lucide-react";
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // In a real app, this default data would come from a database or API
 const defaultHomePageData = {
@@ -162,9 +164,37 @@ export function HomePageEditorForm() {
     name: "testimonials",
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Home Page Data Saved:", values);
-    alert("Home page content saved! Check the console for the data.");
+  useEffect(() => {
+    async function loadContent() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("home_page_content")
+        .select("content")
+        .eq("id", "home-content-singleton")
+        .maybeSingle();
+      if (!error && data && (data as any).content) {
+        form.reset((data as any).content);
+      }
+    }
+    loadContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const supabase = createClient();
+    const payload = {
+      id: "home-content-singleton",
+      content: values,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase
+      .from("home_page_content")
+      .upsert(payload, { onConflict: "id" });
+    if (error) {
+      alert(`Failed to save home content: ${error.message}`);
+    } else {
+      alert("Home page content saved!");
+    }
   }
 
   const renderFeatureFields = (

@@ -34,14 +34,13 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, PlusCircle, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { ImageUploader } from "@/components/admin/image-uploader";
-import { getPostBySlug, getAuthors } from "@/lib/blog";
+import { createClient } from "@/lib/supabase/client";
 import { Combobox } from "@/components/ui/combobox";
 import { useEffect, useMemo, useState, useActionState, useRef } from "react";
 import { generateBlogPostAction } from "@/app/actions";
-import { useFormStatus } from "react-dom";
 import { HtmlEditorToolbar } from "@/components/admin/html-editor-toolbar";
 
-const authors = getAuthors();
+const authors = ["Admin User", "Guest Writer"];
 const availableTags = [
   { value: "Travel Tips", label: "Travel Tips" },
   { value: "Destinations", label: "Destinations" },
@@ -69,8 +68,7 @@ const formSchema = z.object({
   keywords: z.string().optional(),
 });
 
-function GenerateButton() {
-  const { pending } = useFormStatus();
+function GenerateButton({ pending }: { pending: boolean }) {
   return (
     <Button
       type="submit"
@@ -95,10 +93,8 @@ export default function EditPostPage() {
   const router = useRouter();
   const slug = params.slug as string;
   const isNewPost = slug === "new";
-  const post = useMemo(
-    () => (isNewPost ? null : getPostBySlug(slug)),
-    [slug, isNewPost],
-  );
+  const [post, setPost] = useState<any | null>(null);
+  const [existingId, setExistingId] = useState<string | null>(null);
 
   const [aiState, formAction, isGenerating] = useActionState(
     generateBlogPostAction,
@@ -123,18 +119,33 @@ export default function EditPostPage() {
   });
 
   useEffect(() => {
-    if (post) {
-      form.reset({
-        title: post.title,
-        slug: post.slug,
-        content: post.content,
-        author: post.author,
-        status: post.status,
-        tags: post.tags,
-        featuredImage: [], // Can't pre-populate file inputs
-      });
+    async function fetchPost() {
+      if (isNewPost) return;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("posts")
+        .select(
+          "id, slug, title, content, author, status, tags, featured_image",
+        )
+        .eq("slug", slug)
+        .maybeSingle();
+      if (!error && data) {
+        setPost(data);
+        setExistingId(data.id as string);
+        form.reset({
+          title: data.title,
+          slug: data.slug,
+          content: data.content,
+          author: data.author,
+          status: data.status,
+          tags: (data.tags as string[] | null) ?? [],
+          featuredImage: [], // Can't pre-populate file inputs
+        });
+      }
     }
-  }, [post, form]);
+    fetchPost();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, isNewPost]);
 
   useEffect(() => {
     if (aiState.content) {
@@ -158,11 +169,54 @@ export default function EditPostPage() {
     }
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Blog Post Data:", values);
-    alert(
-      `${isNewPost ? "New post created" : "Post updated"}! Check the console for the data.`,
-    );
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const supabase = createClient();
+
+    let featuredImageUrl: string | undefined = undefined;
+    // Upload featured image if provided
+    try {
+      const file = values.featuredImage && values.featuredImage[0];
+      if (file && file instanceof File) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const path = `featured/${values.slug}-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("blog")
+          .upload(path, file, {
+            contentType: file.type || "image/jpeg",
+            upsert: true,
+          });
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("blog")
+            .getPublicUrl(path);
+          featuredImageUrl = publicUrlData.publicUrl;
+        }
+      }
+    } catch (_) {
+      // Ignore upload errors for now
+    }
+
+    const payload = {
+      id: existingId ?? crypto.randomUUID(),
+      slug: values.slug,
+      title: values.title,
+      content: values.content,
+      author: values.author,
+      status: values.status,
+      tags: values.tags ?? [],
+      featured_image: featuredImageUrl ?? post?.featured_image ?? null,
+      created_at: post?.created_at ?? new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("posts").upsert(payload, {
+      onConflict: "slug",
+    });
+    if (error) {
+      alert(`Failed to save post: ${error.message}`);
+      return;
+    }
+    alert(`${isNewPost ? "New post created" : "Post updated"}!`);
     router.push("/admin/blog");
   }
 
@@ -279,7 +333,7 @@ export default function EditPostPage() {
                         />
                       </div>
                       <div className="flex justify-end mt-4">
-                        <GenerateButton />
+                        <GenerateButton pending={isGenerating} />
                       </div>
                       {aiState.message && aiState.message !== "Success" && (
                         <p className="text-sm text-destructive mt-2">

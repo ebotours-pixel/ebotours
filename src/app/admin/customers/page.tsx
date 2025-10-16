@@ -1,15 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
-import { getCustomers } from "@/lib/customers";
+import React, { useEffect, useState } from "react";
+import { getCustomers as getMockCustomers } from "@/lib/customers";
 import type { Customer } from "@/types";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(getCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    async function loadCustomers() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("customers")
+        .select(
+          "id, email, name, source, total_bookings, total_spent, created_at",
+        );
+      if (!error && data) {
+        const transformed: Customer[] = (data as any[]).map((row) => ({
+          id: row.id,
+          email: row.email,
+          name: row.name ?? row.email,
+          source: row.source ?? "Booking",
+          totalBookings: row.total_bookings ?? 0,
+          totalSpent: row.total_spent ?? 0,
+          createdAt: row.created_at ?? new Date().toISOString(),
+          bookings: [],
+        }));
+        setCustomers(transformed);
+      } else {
+        setCustomers(getMockCustomers());
+      }
+    }
+    loadCustomers();
+  }, []);
 
   const handleDeleteCustomer = (customerId: string) => {
     setCustomers((prev) => prev.filter((c) => c.id !== customerId));

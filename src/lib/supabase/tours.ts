@@ -20,14 +20,52 @@ function toCamelCase(obj: any): any {
   return obj;
 }
 
-export async function getTours(): Promise<Tour[]> {
+type GetToursOptions = {
+  q?: string;
+  destination?: string;
+  type?: string; // matches tour_type in DB or tour.tourType in app
+};
+
+export async function getTours(options: GetToursOptions = {}): Promise<Tour[]> {
+  const { q, destination, type } = options;
   const supabase = await createClient();
-  const { data, error } = await supabase.from("tours").select("*");
-  if (error) {
-    console.error("Error fetching tours:", error);
-    return [];
+
+  try {
+    let query = supabase.from("tours").select("*");
+
+    if (q && q.trim()) {
+      // Search in name (and optionally description)
+      query = query.ilike("name", `%${q.trim()}%`);
+    }
+    if (destination && destination.trim()) {
+      query = query.eq("destination", destination.trim());
+    }
+    if (type && type.trim()) {
+      // tour_type is a text column representing the primary type
+      query = query.eq("tour_type", type.trim());
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    if (!data) return [];
+    return (data as any[]).map(toCamelCase) as Tour[];
+  } catch (err) {
+    console.warn("Falling back to mock tours due to Supabase error:", err);
+    // Fallback to mock data when Supabase is unavailable or table isn't ready
+    const { getTours: getMockTours } = await import("@/lib/tours");
+    const all = getMockTours();
+    return all.filter((tour) => {
+      const matchesQ = q ? tour.name.toLowerCase().includes(q.toLowerCase()) : true;
+      const matchesDestination = destination
+        ? tour.destination.toLowerCase() === destination.toLowerCase()
+        : true;
+      const matchesType = type
+        ? (tour.tourType?.toLowerCase() === type.toLowerCase()) ||
+          (Array.isArray(tour.type) && tour.type.map((t) => t.toLowerCase()).includes(type.toLowerCase()))
+        : true;
+      return matchesQ && matchesDestination && matchesType;
+    });
   }
-  return data.map(toCamelCase) as Tour[];
 }
 
 export async function getTourBySlug(slug: string): Promise<Tour | null> {

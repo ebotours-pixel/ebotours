@@ -4,27 +4,67 @@ import { createClient } from "@/lib/supabase/middleware";
 export async function middleware(request: NextRequest) {
   const { supabase, response } = await createClient(request);
 
-  // This will refresh the session cookie if it's expired.
+  // Refresh session cookie if it's expired.
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
   const { pathname } = request.nextUrl;
 
-  // If the user is trying to access an admin page and isn't logged in,
-  // redirect them to the admin login page.
-  if (pathname.startsWith("/admin/") && pathname !== "/admin" && !session) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin";
-    return NextResponse.redirect(url);
+  // Admin role check: prefer admin_users table when available, fallback to user_metadata.is_admin
+  let isAdmin = false;
+  let userId: string | null = null;
+  if (session) {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user ?? null;
+    userId = user?.id ?? null;
+    // Check multiple metadata sources for admin role
+    const metaAdmin = Boolean(
+      user?.user_metadata?.is_admin === true ||
+        user?.app_metadata?.is_admin === true ||
+        (Array.isArray((user?.app_metadata as any)?.roles) &&
+          ((user?.app_metadata as any).roles as string[]).includes("admin")) ||
+        (typeof (user?.app_metadata as any)?.role === "string" &&
+          ((user?.app_metadata as any).role as string).toLowerCase() === "admin")
+    );
+    let tableAdmin = false;
+    if (userId) {
+      try {
+        const { data, error } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!error && data && data.user_id) {
+          tableAdmin = true;
+        }
+      } catch (_) {
+        // If table doesn't exist or RLS blocks, ignore and rely on metadata
+      }
+    }
+    isAdmin = metaAdmin || tableAdmin;
   }
 
-  // If the user is logged in and tries to access the admin login page,
-  // redirect them to the dashboard.
-  if (session && pathname === "/admin") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/admin/dashboard";
-    return NextResponse.redirect(url);
+  // Guard admin routes
+  if (pathname.startsWith("/admin")) {
+    const isLoginPage = pathname === "/admin";
+
+    // Single-user app: never redirect admin routes to home.
+    // Require login only for non-login admin pages.
+    if (!session && !isLoginPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+
+    // If already logged in and visiting /admin (login page), send to dashboard.
+    // This keeps the login experience simple while honoring the user's request
+    // to avoid redirecting admin routes to the public home page.
+    if (session && isLoginPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;
