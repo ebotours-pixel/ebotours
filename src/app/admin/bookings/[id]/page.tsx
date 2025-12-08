@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { BookingStatusActions } from "@/components/admin/booking-status-actions";
 
 interface BookingDetailsPageProps {
   params: Promise<{
@@ -130,6 +131,10 @@ export default async function BookingDetailsPage({
             <CardDescription>
               This booking includes {booking.bookingItems.length} tour(s).
             </CardDescription>
+            <div className="pt-4 border-t">
+              <p className="mb-2 text-sm font-medium text-muted-foreground">Actions</p>
+              <BookingStatusActions bookingId={booking.id} currentStatus={booking.status} />
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -164,6 +169,24 @@ export default async function BookingDetailsPage({
                     <p className="text-muted-foreground text-sm">
                       Tour ID: {item.tourId}
                     </p>
+                  )}
+                  {item.packageName && (
+                    <div className="mt-1">
+                      <p className="text-muted-foreground text-sm font-medium text-primary/80">
+                        Package: {item.packageName}
+                      </p>
+                      {item.tours?.packages?.find(
+                        (p) => p.id === item.packageId,
+                      )?.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {
+                            item.tours.packages.find(
+                              (p) => p.id === item.packageId,
+                            )?.description
+                          }
+                        </p>
+                      )}
+                    </div>
                   )}
                   {item.upsellItemId && (
                     <p className="text-muted-foreground text-sm">

@@ -141,6 +141,11 @@ interface Feature {
   description: string;
 }
 
+interface BrowseCategorySection {
+  title: string;
+  subtitle: string;
+}
+
 interface WhyChooseUsSection {
   pretitle: string;
   title: string;
@@ -149,9 +154,18 @@ interface WhyChooseUsSection {
   feature3: Feature;
 }
 
+interface PopularDestinationsSection {
+  pretitle: string;
+  title: string;
+  count?: number;
+}
+
 interface DiscountBanner {
   title: string;
   description: string;
+  imageUrl?: string;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 interface DiscountBannersSection {
@@ -163,26 +177,47 @@ interface LastMinuteOffersSection {
   discount: string;
   pretitle: string;
   title: string;
+  count?: number;
 }
 
 interface VideoSection {
   pretitle: string;
   title: string;
+  backgroundImageUrl?: string;
+  button1Text?: string;
+  button1Link?: string;
+  button2Text?: string;
+  button2Link?: string;
 }
 
 interface NewsSection {
   pretitle: string;
   title: string;
+  count?: number;
 }
 
 interface HomeContent {
   testimonials?: Testimonial[];
+  testimonialCount?: number;
   hero: HeroSection;
+  browseCategory?: BrowseCategorySection;
   whyChooseUs: WhyChooseUsSection;
+  popularDestinations?: PopularDestinationsSection;
   discountBanners: DiscountBannersSection;
   lastMinuteOffers: LastMinuteOffersSection;
   videoSection: VideoSection;
   newsSection: NewsSection;
+  visibility?: {
+    hero?: boolean;
+    browseCategory?: boolean;
+    whyChooseUs?: boolean;
+    popularDestinations?: boolean;
+    discountBanners?: boolean;
+    lastMinuteOffers?: boolean;
+    testimonials?: boolean;
+    videoSection?: boolean;
+    newsSection?: boolean;
+  };
 }
 
 interface HomePageClientProps {
@@ -197,8 +232,9 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
 
   React.useEffect(() => {
     if (homeContent?.testimonials && Array.isArray(homeContent.testimonials)) {
+      const count = homeContent.testimonialCount || 6;
       setTestimonials(
-        homeContent.testimonials.map((t) => ({ ...t, rating: 5 })),
+        homeContent.testimonials.slice(0, count).map((t) => ({ ...t, rating: 5 })),
       );
     }
   }, [homeContent]);
@@ -221,6 +257,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
   return (
       <div className="space-y-16 md:space-y-32 overflow-hidden">
         {/* Hero Section */}
+        {homeContent.visibility?.hero !== false && (
         <motion.section 
           initial="hidden"
           animate="visible"
@@ -311,8 +348,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             </motion.div>
           </div>
         </motion.section>
+        )}
 
         {/* Categories Section */}
+        {homeContent.visibility?.browseCategory !== false && (
         <section className="container mx-auto px-4 -mt-16 md:-mt-24 relative z-20">
           <motion.div 
             initial="hidden"
@@ -323,10 +362,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
           >
             <div className="text-center mb-6 md:mb-10">
               <h2 className="font-headline text-2xl md:text-4xl font-bold text-foreground">
-                Browse By Destination Category
+                {homeContent.browseCategory?.title || "Browse By Destination Category"}
               </h2>
               <p className="text-muted-foreground mt-2 md:mt-3 text-base md:text-lg">
-                Select a category to see our exclusive tour packages
+                {homeContent.browseCategory?.subtitle || "Select a category to see our exclusive tour packages"}
               </p>
             </div>
             <motion.div 
@@ -355,8 +394,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             </motion.div>
           </motion.div>
         </section>
+        )}
 
         {/* Why Choose Us Section */}
+        {homeContent.visibility?.whyChooseUs !== false && (
         <section className="container mx-auto px-4">
           <motion.div 
             initial="hidden"
@@ -428,8 +469,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             </motion.div>
           </motion.div>
         </section>
+        )}
 
         {/* Popular Destinations Section */}
+        {homeContent.visibility?.popularDestinations !== false && (
         <section className="container mx-auto px-4" id="tours">
           <motion.div 
             initial="hidden"
@@ -439,9 +482,11 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
           >
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-10 gap-4">
               <motion.div variants={fadeInUp}>
-                <p className="text-primary font-bold tracking-wide uppercase text-xs md:text-sm">Top Destinations</p>
+                <p className="text-primary font-bold tracking-wide uppercase text-xs md:text-sm">
+                  {homeContent.popularDestinations?.pretitle || "Top Destinations"}
+                </p>
                 <h2 className="font-headline text-3xl md:text-5xl font-bold text-foreground mt-2">
-                  Popular Tours We Offer
+                  {homeContent.popularDestinations?.title || "Popular Tours We Offer"}
                 </h2>
               </motion.div>
               <motion.div variants={fadeInUp}>
@@ -455,7 +500,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             
             {tours.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {tours.slice(0, 6).map((tour, i) => (
+                {tours.slice(0, homeContent.popularDestinations?.count || 6).map((tour, i) => (
                   <motion.div key={tour.id} variants={fadeInUp} custom={i}>
                     <TourCard tour={tour} />
                   </motion.div>
@@ -473,8 +518,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             )}
           </motion.div>
         </section>
+        )}
 
         {/* Discount Banners */}
+        {homeContent.visibility?.discountBanners !== false && (
         <section className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-6 md:gap-8">
             <motion.div 
@@ -491,14 +538,16 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
                 <p className="text-base md:text-lg text-muted-foreground mb-4 md:mb-6">
                   {homeContent.discountBanners.banner1.description}
                 </p>
-                <Button className="shadow-lg group-hover:scale-105 transition-transform">
-                  Book Now <ArrowRight className="ml-2 h-4 w-4" />
+                <Button className="shadow-lg group-hover:scale-105 transition-transform" asChild>
+                  <Link href={homeContent.discountBanners.banner1.buttonLink || "/tours"}>
+                    {homeContent.discountBanners.banner1.buttonText || "Book Now"} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
               <div className="relative w-40 h-40 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 md:w-48 md:h-48 lg:w-64 lg:h-64 opacity-90 md:opacity-80 group-hover:scale-110 transition-transform duration-500">
                 <Image
-                  src="https://placehold.co/200x150.png"
-                  alt="Travel items"
+                  src={homeContent.discountBanners.banner1.imageUrl || "https://placehold.co/200x150.png"}
+                  alt={homeContent.discountBanners.banner1.title}
                   fill
                   style={{ objectFit: 'contain' }}
                 />
@@ -519,14 +568,16 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
                 <p className="text-base md:text-lg text-primary-foreground/80 mb-4 md:mb-6">
                   {homeContent.discountBanners.banner2.description}
                 </p>
-                <Button variant="secondary" className="shadow-lg group-hover:scale-105 transition-transform">
-                  Book Now <ArrowRight className="ml-2 h-4 w-4" />
+                <Button variant="secondary" className="shadow-lg group-hover:scale-105 transition-transform" asChild>
+                  <Link href={homeContent.discountBanners.banner2.buttonLink || "/tours"}>
+                    {homeContent.discountBanners.banner2.buttonText || "Book Now"} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
               <div className="relative w-40 h-40 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 md:w-48 md:h-48 lg:w-64 lg:h-64 opacity-90 md:opacity-80 group-hover:scale-110 transition-transform duration-500">
                 <Image
-                  src="https://placehold.co/200x150.png"
-                  alt="Flight items"
+                  src={homeContent.discountBanners.banner2.imageUrl || "https://placehold.co/200x150.png"}
+                  alt={homeContent.discountBanners.banner2.title}
                   fill
                   style={{ objectFit: 'contain' }}
                 />
@@ -534,8 +585,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             </motion.div>
           </div>
         </section>
+        )}
 
         {/* Last Minute Offers */}
+        {homeContent.visibility?.lastMinuteOffers !== false && (
         <section className="container mx-auto px-4">
           <motion.div 
             initial="hidden"
@@ -570,7 +623,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
                     className="w-full"
                   >
                     <CarouselContent>
-                      {tours.slice(0, 4).map((tour, index) => (
+                      {tours.slice(0, homeContent.lastMinuteOffers.count || 4).map((tour, index) => (
                         <CarouselItem key={index} className="md:basis-1/2 pl-4">
                           <div className="p-1 h-full">
                             <LastMinuteOfferCard tour={tour} />
@@ -592,8 +645,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             </div>
           </motion.div>
         </section>
+        )}
 
         {/* Testimonials Section */}
+        {homeContent.visibility?.testimonials !== false && (
         <section className="container mx-auto px-4">
           <motion.div 
             initial="hidden"
@@ -681,8 +736,10 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
            </div>
         )}
       </section>
+      )}
 
       {/* Video Section */}
+      {homeContent.visibility?.videoSection !== false && (
       <section className="relative py-24 md:py-40 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/50 z-10" />
         <motion.div 
@@ -692,12 +749,12 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
           className="absolute inset-0"
         >
           <Image
-            src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
-            alt="Woman in a boat on a lake with dramatic cliffs"
+            src={homeContent.videoSection.backgroundImageUrl || "https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"}
+            alt={homeContent.videoSection.title}
             fill
             style={{ objectFit: 'cover' }}
             className="object-cover"
-            data-ai-hint="woman cliff lake"
+            data-ai-hint="video section background"
           />
         </motion.div>
         
@@ -715,22 +772,44 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
               {homeContent.videoSection.title}
             </motion.h2>
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row justify-center items-center gap-6">
-              <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-xl hover:scale-105 transition-transform">
-                Find Out More <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                className="text-white text-lg font-semibold hover:text-primary hover:bg-white/10 h-14 px-8 rounded-full group transition-all"
-              >
-                <PlayCircle className="mr-3 h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                Watch Video
-              </Button>
+              {homeContent.videoSection.button1Text && (
+                <Button size="lg" className="h-14 px-8 text-lg rounded-full shadow-xl hover:scale-105 transition-transform" asChild={!!homeContent.videoSection.button1Link}>
+                  {homeContent.videoSection.button1Link ? (
+                    <Link href={homeContent.videoSection.button1Link}>
+                      {homeContent.videoSection.button1Text} <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  ) : (
+                    <span>{homeContent.videoSection.button1Text} <ArrowRight className="ml-2 h-5 w-5" /></span>
+                  )}
+                </Button>
+              )}
+              {homeContent.videoSection.button2Text && (
+                <Button
+                  variant="ghost"
+                  className="text-white text-lg font-semibold hover:text-primary hover:bg-white/10 h-14 px-8 rounded-full group transition-all"
+                  asChild={!!homeContent.videoSection.button2Link}
+                >
+                  {homeContent.videoSection.button2Link ? (
+                    <Link href={homeContent.videoSection.button2Link}>
+                       <PlayCircle className="mr-3 h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                       {homeContent.videoSection.button2Text}
+                    </Link>
+                  ) : (
+                    <span>
+                      <PlayCircle className="mr-3 h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                      {homeContent.videoSection.button2Text}
+                    </span>
+                  )}
+                </Button>
+              )}
             </motion.div>
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* News & Articles Section */}
+      {homeContent.visibility?.newsSection !== false && (
       <section className="container mx-auto px-4">
         <motion.div 
           initial="hidden"
@@ -749,7 +828,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
           
           {articles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {articles.map((article, index) => (
+              {articles.slice(0, homeContent.newsSection.count || 3).map((article, index) => (
                 <motion.div key={article.id || index} variants={fadeInUp}>
                   <Card className="overflow-hidden group h-full border-border/40 shadow-lg hover:shadow-2xl transition-all duration-300">
                     <div className="relative h-60 overflow-hidden">
@@ -797,6 +876,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
           )}
         </motion.div>
       </section>
+      )}
     </div>
   );
 }

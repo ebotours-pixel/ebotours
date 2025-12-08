@@ -23,7 +23,7 @@ export async function getBookingById(id: string): Promise<Booking | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bookings")
-    .select("*, booking_items(*, tours(name, slug), upsell_items(name, price))")
+    .select("*, booking_items(*, tours(name, slug, packages), upsell_items(name, price))")
     .eq("id", id)
     .single();
 
@@ -52,6 +52,7 @@ export async function updateBookingStatus(
   }
 
   revalidatePath("/admin/bookings");
+  revalidatePath(`/admin/bookings/${bookingId}`);
 }
 
 export async function deleteBooking(bookingId: string) {

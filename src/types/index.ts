@@ -66,6 +66,7 @@ export type BookingItem = {
     // from the join
     name: string;
     slug: string;
+    packages?: TourPackage[];
   };
   upsellItems?: {
     // New: from the join

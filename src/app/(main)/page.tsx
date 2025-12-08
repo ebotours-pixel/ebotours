@@ -31,6 +31,15 @@ const defaultContent = {
         "We offer unique itineraries and exclusive access to create once-in-a-lifetime journeys.",
     },
   },
+  browseCategory: {
+    title: "Browse By Destination Category",
+    subtitle: "Select a category to see our exclusive tour packages",
+  },
+  popularDestinations: {
+    pretitle: "Top Destinations",
+    title: "Popular Tours We Offer",
+    count: 6,
+  },
   discountBanners: {
     banner1: {
       title: "35% OFF",
@@ -45,6 +54,7 @@ const defaultContent = {
     discount: "50%",
     pretitle: "Deals & Offers",
     title: "Incredible Last-Minute Offers",
+    count: 4,
   },
   testimonials: [
     {
@@ -69,13 +79,31 @@ const defaultContent = {
       content: "Praesent ut lacus a velit tincidunt aliquam a eget urna. Sed ullamcorper tristique nisl at pharetra turpis accumsan et etiam eu sollicitudin eros. In imperdiet accumsan.",
     },
   ],
+  testimonialCount: 6,
   videoSection: {
     pretitle: "Watch Our Story",
     title: "We Provide The Best Tour Facilities",
+    backgroundImageUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+    button1Text: "Find Out More",
+    button1Link: "/tours",
+    button2Text: "Watch Video",
+    button2Link: "#",
   },
   newsSection: {
     pretitle: "News & Updates",
     title: "Our Latest News & Articles",
+    count: 3,
+  },
+  visibility: {
+    hero: true,
+    browseCategory: true,
+    whyChooseUs: true,
+    popularDestinations: true,
+    discountBanners: true,
+    lastMinuteOffers: true,
+    testimonials: true,
+    videoSection: true,
+    newsSection: true,
   },
 };
 
