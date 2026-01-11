@@ -242,7 +242,7 @@ export default function HomePageClient({ initialTours, homeContent, articles = [
             />
             <motion.p 
               variants={fadeInUp}
-              className="text-base md:text-2xl max-w-3xl mx-auto mb-8 md:mb-10 text-white/90 drop-shadow-md font-light"
+              className="mx-auto mb-8 md:mb-10 max-w-3xl rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-base font-medium leading-relaxed text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-sm md:px-6 md:py-4 md:text-xl lg:text-2xl text-pretty"
             >
               {homeContent.hero?.subtitle}
             </motion.p>

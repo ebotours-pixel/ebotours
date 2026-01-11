@@ -50,6 +50,18 @@ function getUpsellCategory(item: UpsellItem) {
   return "Other";
 }
 
+function getUpsellSortPrice(item: UpsellItem) {
+  const variants = item.variants ?? [];
+  if (variants.length > 0) {
+    return variants.reduce((min, v) => Math.min(min, v.price ?? 0), Infinity);
+  }
+  return item.price ?? 0;
+}
+
+function getVariantKey(variant: NonNullable<UpsellItem["variants"]>[number]) {
+  return variant.id ?? variant.name;
+}
+
 export function ServicesClient({
   services,
   showTypeFilter = false,
@@ -72,6 +84,7 @@ export function ServicesClient({
   );
   const [typeFilter, setTypeFilter] = React.useState<"all" | UpsellItem["type"]>("all");
   const [category, setCategory] = React.useState<string>("All");
+  const [selectedVariants, setSelectedVariants] = React.useState<Record<string, string>>({});
 
   const categories = React.useMemo(() => {
     const set = new Set<string>();
@@ -100,8 +113,8 @@ export function ServicesClient({
     }
 
     const sorted = [...filtered];
-    if (sort === "price_asc") sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
-    if (sort === "price_desc") sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    if (sort === "price_asc") sorted.sort((a, b) => getUpsellSortPrice(a) - getUpsellSortPrice(b));
+    if (sort === "price_desc") sorted.sort((a, b) => getUpsellSortPrice(b) - getUpsellSortPrice(a));
     return sorted;
   }, [category, q, services, showTypeFilter, sort, typeFilter]);
 
@@ -207,9 +220,19 @@ export function ServicesClient({
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {visibleServices.map((item) => {
-            const isInCart = cartItems.some(
-              (c) => c.productType === "upsell" && c.product.id === item.id,
-            );
+            const variants = item.variants ?? [];
+            const selectedVariantKey = variants.length > 0
+              ? (selectedVariants[item.id] ?? (variants[0] ? getVariantKey(variants[0]) : ""))
+              : undefined;
+            const selectedVariant = selectedVariantKey
+              ? variants.find((v) => getVariantKey(v) === selectedVariantKey) ?? variants[0]
+              : undefined;
+            const displayPrice = selectedVariant?.price ?? item.price ?? 0;
+            const isInCart = cartItems.some((c) => {
+              if (c.productType !== "upsell") return false;
+              if (c.product.id !== item.id) return false;
+              return (c.packageId ?? "base") === (selectedVariantKey ?? "base");
+            });
             const canAdd = item.isActive && !isInCart;
             const itemCategory = getUpsellCategory(item);
 
@@ -237,7 +260,7 @@ export function ServicesClient({
                       $
                       {new Intl.NumberFormat("en-US", {
                         maximumFractionDigits: 0,
-                      }).format(item.price ?? 0)}
+                      }).format(displayPrice)}
                     </Badge>
                     <Badge variant="secondary" className="bg-background/90">
                       {itemCategory}
@@ -265,16 +288,52 @@ export function ServicesClient({
                   </div>
 
                   <div className="mt-auto flex flex-col gap-2">
+                    {variants.length > 0 ? (
+                      <div className="grid gap-2">
+                        <p className="text-sm font-medium">Variant</p>
+                        <select
+                          value={selectedVariantKey ?? ""}
+                          onChange={(e) =>
+                            setSelectedVariants((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          className="h-10 rounded-md border bg-background px-3 text-sm"
+                        >
+                          {variants.map((v) => (
+                            <option key={getVariantKey(v)} value={getVariantKey(v)}>
+                              {v.name} • $
+                              {new Intl.NumberFormat("en-US", {
+                                maximumFractionDigits: 0,
+                              }).format(v.price ?? 0)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
                     <Button
                       type="button"
                       onClick={() =>
-                        addToCart(item, "upsell", undefined, undefined, undefined, 1)
+                        addToCart(
+                          item,
+                          "upsell",
+                          undefined,
+                          undefined,
+                          undefined,
+                          1,
+                          selectedVariant ? getVariantKey(selectedVariant) : undefined,
+                          selectedVariant?.name,
+                        )
                       }
                       disabled={!canAdd}
                       className="w-full"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" />
                       {isInCart ? "In Cart" : "Add to cart"}
+                    </Button>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/services/${item.id}`}>Details</Link>
                     </Button>
                     {isInCart && (
                       <Button asChild variant="outline" className="w-full">

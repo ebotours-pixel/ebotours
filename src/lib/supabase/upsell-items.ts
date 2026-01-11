@@ -11,7 +11,10 @@ function ensureUpsellItemDefaults(item: UpsellItem): UpsellItem {
     ...item,
     isActive: item.isActive ?? false,
     price: item.price ?? 0,
-    variants: item.variants ?? [],
+    variants: (item.variants ?? []).map((variant) => ({
+      ...variant,
+      id: variant.id ?? variant.name,
+    })),
     targeting: item.targeting ?? null,
   };
 }
