@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Combobox } from "@/components/ui/combobox";
 import type { Tour } from "@/types";
@@ -113,7 +113,7 @@ export const formSchema = z.object({
 
 interface TourFormProps {
   initialData?: Tour;
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  onSubmit: (values: z.infer<typeof formSchema>) => void | Promise<void>;
   formType: "new" | "edit";
 }
 
@@ -864,7 +864,19 @@ export function TourForm({ initialData, onSubmit, formType }: TourFormProps) {
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardFooter className="flex justify-end">
-                  <Button type="submit">{submitButtonText}</Button>
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {formType === "new" ? "Creating..." : "Saving..."}
+                      </>
+                    ) : (
+                      submitButtonText
+                    )}
+                  </Button>
                 </CardFooter>
               </Card>
             </div>

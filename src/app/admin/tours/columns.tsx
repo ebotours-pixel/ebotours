@@ -19,25 +19,34 @@ import Link from "next/link";
 import { deleteTour } from "@/lib/supabase/tours";
 import { useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const TourActions = ({ tour }: { tour: Tour }) => {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this tour? This action cannot be undone.")) {
       startTransition(async () => {
         try {
           await deleteTour(tour.id);
+          router.refresh();
           toast({
             title: "Tour deleted",
             description: "The tour has been successfully deleted.",
           });
         } catch (error) {
           console.error("Failed to delete tour:", error);
+          const message =
+            error instanceof Error
+              ? error.message
+              : typeof error === "string"
+                ? error
+                : "Failed to delete tour.";
           toast({
             title: "Error",
-            description: "Failed to delete tour.",
+            description: message,
             variant: "destructive",
           });
         }

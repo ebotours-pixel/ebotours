@@ -440,8 +440,24 @@ export default function EditPostPage() {
                   />
                 </CardContent>
                 <CardFooter className="flex justify-end">
-                  <Button type="submit" name="action" value="submit">
-                    {isNewPost ? "Create Post" : "Save Changes"}
+                  <Button
+                    type="submit"
+                    name="action"
+                    value="submit"
+                    disabled={isGenerating || form.formState.isSubmitting}
+                  >
+                    {(isGenerating || form.formState.isSubmitting) && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isGenerating
+                      ? "Generating..."
+                      : form.formState.isSubmitting
+                        ? isNewPost
+                          ? "Creating..."
+                          : "Saving..."
+                        : isNewPost
+                          ? "Create Post"
+                          : "Save Changes"}
                   </Button>
                 </CardFooter>
               </Card>

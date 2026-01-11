@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { X, PlusCircle } from "lucide-react";
+import { X, PlusCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -118,13 +118,19 @@ function ManageListSection({
 export default function TourSettingsPage() {
   const [destinations, setDestinations] = useState(initialDestinations);
   const [categories, setCategories] = useState(initialCategories);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveChanges = () => {
-    // In a real application, you would make an API call here to save the changes.
-    console.log("Saving changes:", { destinations, categories });
-    alert(
-      "Changes saved to console! In a real app, this would update the database.",
-    );
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      console.log("Saving changes:", { destinations, categories });
+      alert(
+        "Changes saved to console! In a real app, this would update the database.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -163,8 +169,15 @@ export default function TourSettingsPage() {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handleSaveChanges} size="lg">
-          Save Changes
+        <Button onClick={handleSaveChanges} size="lg" disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
         </Button>
       </div>
     </div>
