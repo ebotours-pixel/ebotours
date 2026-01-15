@@ -4,6 +4,33 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}): Promise<Metadata> {
+  const resolved = await searchParams;
+  const destination = typeof resolved?.destination === "string" ? resolved.destination : "";
+  const type = typeof resolved?.type === "string" ? resolved.type : "";
+
+  let title = "All Tours";
+  let description = "Browse our wide selection of tours and travel experiences in Egypt.";
+
+  if (destination) {
+    title = `${destination} Tours`;
+    description = `Find the best tours in ${destination}. Book your perfect ${destination} adventure with Tix and Trips Egypt.`;
+  } else if (type) {
+    title = `${type} Tours`;
+    description = `Explore our ${type} tours in Egypt. Unforgettable experiences await.`;
+  }
+
+  return {
+    title,
+    description,
+  };
+}
 
 export default async function AllToursPage({
   searchParams,

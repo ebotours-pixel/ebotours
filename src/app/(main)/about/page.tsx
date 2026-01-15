@@ -11,6 +11,37 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  let agencyName = "Tix and Trips Egypt";
+  let tagline = "Your Gateway to Unforgettable Journeys";
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("settings")
+      .select("data")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (!error && data) {
+      const settingsData = (
+        data as unknown as
+          | { data?: { aboutUs?: string; agencyName?: string; tagline?: string } }
+          | null
+      )?.data;
+
+      if (settingsData?.agencyName) agencyName = settingsData.agencyName;
+      if (settingsData?.tagline) tagline = settingsData.tagline;
+    }
+  } catch {}
+
+  return {
+    title: `About ${agencyName}`,
+    description: `Learn more about ${agencyName}. ${tagline}`,
+  };
+}
 
 export default async function AboutPage() {
   let agencyName = "";

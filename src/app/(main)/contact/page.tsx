@@ -9,6 +9,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  let agencyName = "Tix and Trips Egypt";
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("settings")
+      .select("data")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (!error && data) {
+      const settingsData = (
+        data as unknown as
+          | { data?: { agencyName?: string } }
+          | null
+      )?.data;
+
+      if (settingsData?.agencyName) agencyName = settingsData.agencyName;
+    }
+  } catch {}
+
+  return {
+    title: `Contact ${agencyName}`,
+    description: `Get in touch with ${agencyName}. We are here to help you plan your perfect Egypt vacation.`,
+  };
+}
 
 export default async function ContactPage({
   searchParams,

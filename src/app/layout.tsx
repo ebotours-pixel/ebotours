@@ -13,8 +13,37 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "tix and trips egypt",
-  description: "Tours and travel experiences in Egypt.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tixandtripsegypt.com"),
+  title: {
+    default: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
+    template: "%s | Tix and Trips Egypt",
+  },
+  description: "Explore the wonders of Egypt with Tix and Trips. We offer curated tours, custom travel experiences, and expert guides to the Pyramids, Luxor, Aswan, and beyond.",
+  keywords: ["Egypt tours", "travel Egypt", "Pyramids of Giza", "Luxor tours", "Aswan cruises", "tailor-made Egypt trips", "vacation in Egypt", "Nile cruise"],
+  openGraph: {
+    title: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
+    description: "Discover the magic of Egypt with our premium tours and travel packages. From the Pyramids to the Nile, we create memories that last a lifetime.",
+    url: "/",
+    siteName: "Tix and Trips Egypt",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tix and Trips Egypt",
+    description: "Explore the wonders of Egypt with Tix and Trips. Custom tours and unforgettable experiences.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
