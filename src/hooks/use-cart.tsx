@@ -8,11 +8,13 @@ import React, {
   ReactNode,
   useCallback,
 } from "react";
-import type { Tour, CartItem, UpsellItem } from "@/types";
+import { validatePromoCode } from "@/lib/supabase/promo-codes";
+import type { Tour, CartItem, UpsellItem, PromoCode } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface CartContextType {
   cartItems: CartItem[];
+  promoCode: PromoCode | null;
   addToCart: (
     product: Tour | UpsellItem,
     productType: "tour" | "upsell",
@@ -30,20 +32,30 @@ interface CartContextType {
   ) => void;
   clearCart: () => void;
   getCartTotal: () => number;
+  applyPromoCode: (code: string) => Promise<void>;
+  removePromoCode: () => void;
+  getDiscountAmount: () => number;
+  getFinalTotal: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [promoCode, setPromoCode] = useState<PromoCode | null>(null);
   const { toast } = useToast();
   const CART_STORAGE_KEY = "tix-and-trips-egypt-cart";
+  const PROMO_STORAGE_KEY = "tix-and-trips-egypt-promo";
 
   useEffect(() => {
     try {
       const storedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
+      }
+      const storedPromo = localStorage.getItem(PROMO_STORAGE_KEY);
+      if (storedPromo) {
+        setPromoCode(JSON.parse(storedPromo));
       }
     } catch (error) {
       console.error("Could not load cart from localStorage", error);
@@ -53,10 +65,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      if (promoCode) {
+        localStorage.setItem(PROMO_STORAGE_KEY, JSON.stringify(promoCode));
+      } else {
+        localStorage.removeItem(PROMO_STORAGE_KEY);
+      }
     } catch (error) {
       console.error("Could not save cart to localStorage", error);
     }
-  }, [cartItems]);
+  }, [cartItems, promoCode]);
 
   const addToCart = useCallback(
     (
@@ -178,9 +195,75 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }, 0);
   }, [cartItems]);
 
+  const getDiscountAmount = useCallback(() => {
+    if (!promoCode) return 0;
+    const subtotal = getCartTotal();
+    
+    // Check minimum order amount
+    if (promoCode.minOrderAmount && subtotal < promoCode.minOrderAmount) {
+      return 0;
+    }
+
+    let discount = 0;
+    if (promoCode.type === "percentage") {
+      discount = (subtotal * promoCode.value) / 100;
+      if (promoCode.maxDiscountAmount && discount > promoCode.maxDiscountAmount) {
+        discount = promoCode.maxDiscountAmount;
+      }
+    } else {
+      discount = promoCode.value;
+    }
+
+    // Ensure discount doesn't exceed subtotal
+    return Math.min(discount, subtotal);
+  }, [promoCode, getCartTotal]);
+
+  const getFinalTotal = useCallback(() => {
+    return getCartTotal() - getDiscountAmount();
+  }, [getCartTotal, getDiscountAmount]);
+
+  const applyPromoCode = useCallback(async (code: string) => {
+    try {
+      const subtotal = getCartTotal();
+      const promo = await validatePromoCode(code, subtotal);
+      setPromoCode(promo);
+      toast({
+        title: "Promo Code Applied",
+        description: `Discount of ${promo.type === "percentage" ? `${promo.value}%` : `$${promo.value}`} applied!`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Invalid Promo Code",
+        description: error instanceof Error ? error.message : "Could not apply promo code.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }, [getCartTotal, toast]);
+
+  const removePromoCode = useCallback(() => {
+    setPromoCode(null);
+    toast({
+      title: "Promo Code Removed",
+      description: "The promo code has been removed from your cart.",
+    });
+  }, [toast]);
+
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, clearCart, getCartTotal }}
+      value={{ 
+        cartItems, 
+        promoCode,
+        addToCart, 
+        removeFromCart, 
+        clearCart, 
+        getCartTotal,
+        applyPromoCode,
+        removePromoCode,
+        getDiscountAmount,
+        getFinalTotal
+      }}
     >
       {children}
     </CartContext.Provider>

@@ -10,26 +10,26 @@ export default async function ToursPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Tours Management
-          </h2>
-          <p className="text-muted-foreground">
-            Here&apos;s a list of all your tours. You can add, edit, or delete them.
+          <h1 className="text-3xl font-bold tracking-tight">
+            Tours
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your tour packages, pricing, and availability.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" asChild className="flex-1 sm:flex-none">
             <Link href="/admin/tours/settings">
               <Settings className="mr-2 h-4 w-4" />
-              Tours Settings
+              Settings
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="flex-1 sm:flex-none">
             <Link href="/admin/tours/new">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Tour
+              New Tour
             </Link>
           </Button>
         </div>

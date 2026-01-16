@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
@@ -13,20 +14,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { PlusCircle, Trash2 } from "lucide-react";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { PlusCircle, Trash2, Layout, Image as ImageIcon, MapPin, Tag, Video, Newspaper, MessageSquare, Eye, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -35,12 +38,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import Image from "next/image";
 import { browseCategoryIconKeys } from "@/types";
-import type { BrowseCategoryItem } from "@/types";
+import type { BrowseCategoryItem, HomeContent } from "@/types";
+import { Separator } from "@/components/ui/separator";
+import { updateHomePageContent } from "@/lib/supabase/agency-content";
 
 const defaultBrowseCategories: BrowseCategoryItem[] = [];
 
@@ -235,16 +240,78 @@ const formSchema = z.object({
   }),
 });
 
-export function HomePageEditorForm() {
-  const [existingHeroUrl, setExistingHeroUrl] = useState<string | null>(null);
-  const [existingBanner1Url, setExistingBanner1Url] = useState<string | null>(null);
-  const [existingBanner2Url, setExistingBanner2Url] = useState<string | null>(null);
-  const [existingVideoBgUrl, setExistingVideoBgUrl] = useState<string | null>(null);
-  const [existingWhyChooseUsUrl, setExistingWhyChooseUsUrl] = useState<string | null>(null);
+export function HomePageEditorForm({ initialContent }: { initialContent: HomeContent | null }) {
+  // Merge initial content with defaults
+  const mergedValues = initialContent ? {
+      ...defaultHomePageData,
+      ...initialContent,
+      hero: { 
+          ...defaultHomePageData.hero, 
+          ...initialContent.hero, 
+          image: undefined 
+      },
+      whyChooseUs: { 
+          ...defaultHomePageData.whyChooseUs, 
+          ...initialContent.whyChooseUs, 
+          image: undefined 
+      },
+      browseCategory: {
+          ...defaultHomePageData.browseCategory,
+          ...initialContent.browseCategory,
+          categories: initialContent.browseCategory?.categories || defaultHomePageData.browseCategory.categories,
+      },
+      popularDestinations: {
+          ...defaultHomePageData.popularDestinations,
+          ...initialContent.popularDestinations,
+      },
+      discountBanners: {
+          banner1: { 
+              ...defaultHomePageData.discountBanners.banner1, 
+              ...initialContent.discountBanners?.banner1, 
+              image: undefined 
+          },
+          banner2: { 
+              ...defaultHomePageData.discountBanners.banner2, 
+              ...initialContent.discountBanners?.banner2, 
+              image: undefined 
+          },
+      },
+      lastMinuteOffers: {
+          ...defaultHomePageData.lastMinuteOffers,
+          ...initialContent.lastMinuteOffers,
+      },
+      videoSection: { 
+          ...defaultHomePageData.videoSection, 
+          ...initialContent.videoSection, 
+          backgroundImage: undefined 
+      },
+      newsSection: {
+          ...defaultHomePageData.newsSection,
+          ...initialContent.newsSection,
+      },
+      visibility: {
+          ...defaultHomePageData.visibility,
+          ...initialContent.visibility,
+      },
+      testimonials: (initialContent.testimonials || defaultHomePageData.testimonials).map(t => ({
+          name: t.name,
+          role: t.role,
+          avatar: t.avatar,
+          content: t.content || t.text || "",
+      })),
+      testimonialCount: initialContent.testimonialCount ?? defaultHomePageData.testimonialCount,
+  } : defaultHomePageData;
+
+  const [existingHeroUrl] = useState<string | null>(initialContent?.hero?.imageUrl || null);
+  const [existingBanner1Url] = useState<string | null>(initialContent?.discountBanners?.banner1?.imageUrl || null);
+  const [existingBanner2Url] = useState<string | null>(initialContent?.discountBanners?.banner2?.imageUrl || null);
+  const [existingVideoBgUrl] = useState<string | null>(initialContent?.videoSection?.backgroundImageUrl || null);
+  const [existingWhyChooseUsUrl] = useState<string | null>(initialContent?.whyChooseUs?.imageUrl || null);
+  const [activeTab, setActiveTab] = useState("visibility");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultHomePageData,
+    defaultValues: mergedValues,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -261,108 +328,7 @@ export function HomePageEditorForm() {
     name: "browseCategory.categories",
   });
 
-  useEffect(() => {
-    async function loadContent() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("home_page_content")
-        .select("data")
-        .eq("id", 1)
-        .maybeSingle();
-      
-      if (!error && data && data.data) {
-        const content = data.data as Partial<typeof defaultHomePageData>;
-        // Safe casting for nested properties
-        const heroContent = (content.hero || {}) as Partial<typeof defaultHomePageData.hero>;
-        const discountBanners = (content.discountBanners || {}) as Partial<typeof defaultHomePageData.discountBanners>;
-        const videoSection = (content.videoSection || {}) as Partial<typeof defaultHomePageData.videoSection>;
-        const whyChooseUs = (content.whyChooseUs || {}) as Partial<typeof defaultHomePageData.whyChooseUs>;
-        const browseCategory = (content.browseCategory || {}) as Partial<typeof defaultHomePageData.browseCategory>;
-        const popularDestinations = (content.popularDestinations || {}) as Partial<typeof defaultHomePageData.popularDestinations>;
-        const lastMinuteOffers = (content.lastMinuteOffers || {}) as Partial<typeof defaultHomePageData.lastMinuteOffers>;
-        const newsSection = (content.newsSection || {}) as Partial<typeof defaultHomePageData.newsSection>;
-        const visibility = (content.visibility || {}) as Partial<typeof defaultHomePageData.visibility>;
 
-        const normalizedTestimonials = (content.testimonials || defaultHomePageData.testimonials).map(
-          (t) => ({
-            name: (t as { name?: string }).name ?? "",
-            role: (t as { role?: string }).role ?? "",
-            avatar: (t as { avatar?: string }).avatar ?? "",
-            content:
-              (t as { content?: string }).content ??
-              (t as { text?: string }).text ??
-              "",
-          }),
-        );
-        
-        form.reset({
-          ...defaultHomePageData,
-          hero: {
-            title: heroContent.title ?? defaultHomePageData.hero.title,
-            subtitle: heroContent.subtitle ?? defaultHomePageData.hero.subtitle,
-            image: [],
-            imageAlt: heroContent.imageAlt ?? defaultHomePageData.hero.imageAlt,
-          },
-          whyChooseUs: {
-            ...defaultHomePageData.whyChooseUs,
-            ...whyChooseUs,
-            image: [],
-            feature1: { ...defaultHomePageData.whyChooseUs.feature1, ...whyChooseUs.feature1 },
-            feature2: { ...defaultHomePageData.whyChooseUs.feature2, ...whyChooseUs.feature2 },
-            feature3: { ...defaultHomePageData.whyChooseUs.feature3, ...whyChooseUs.feature3 },
-          },
-          browseCategory: {
-            ...defaultHomePageData.browseCategory,
-            ...browseCategory,
-            categories: browseCategory.categories ?? defaultHomePageData.browseCategory.categories,
-          },
-          popularDestinations: {
-            ...defaultHomePageData.popularDestinations,
-            ...popularDestinations,
-          },
-          lastMinuteOffers: {
-            ...defaultHomePageData.lastMinuteOffers,
-            ...lastMinuteOffers,
-          },
-          newsSection: {
-            ...defaultHomePageData.newsSection,
-            ...newsSection,
-          },
-          visibility: {
-            ...defaultHomePageData.visibility,
-            ...visibility,
-          },
-          testimonials: normalizedTestimonials,
-          testimonialCount: content.testimonialCount ?? defaultHomePageData.testimonialCount,
-          discountBanners: {
-             banner1: {
-                 ...defaultHomePageData.discountBanners.banner1,
-                 ...discountBanners.banner1,
-                 image: [],
-             },
-             banner2: {
-                 ...defaultHomePageData.discountBanners.banner2,
-                 ...discountBanners.banner2,
-                 image: [],
-             },
-          },
-          videoSection: {
-              ...defaultHomePageData.videoSection,
-              ...videoSection,
-              backgroundImage: [],
-          }
-        });
-        
-        setExistingHeroUrl(heroContent.imageUrl || null);
-        setExistingBanner1Url(discountBanners.banner1?.imageUrl || null);
-        setExistingBanner2Url(discountBanners.banner2?.imageUrl || null);
-        setExistingVideoBgUrl(videoSection.backgroundImageUrl || null);
-        setExistingWhyChooseUsUrl(whyChooseUs.imageUrl || null);
-      }
-    }
-    loadContent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function handleImageUpload(file: File | undefined | null, pathPrefix: string): Promise<string | null> {
       if (!file || typeof File === "undefined" || !(file instanceof File)) return null;
@@ -385,7 +351,6 @@ export function HomePageEditorForm() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const supabase = createClient();
     
     // Handle uploads
     const heroFile = values.hero?.image && values.hero.image[0];
@@ -467,13 +432,11 @@ export function HomePageEditorForm() {
       },
     };
 
-    const { error } = await supabase
-      .from("home_page_content")
-      .upsert({ id: 1, data: contentToSave });
-
-    if (!error) {
+    try {
+      await updateHomePageContent(contentToSave as HomeContent);
       alert("Home page content updated successfully!");
-    } else {
+    } catch (error) {
+      console.error("Failed to save content:", error);
       alert("Failed to update content.");
     }
   }
@@ -481,7 +444,7 @@ export function HomePageEditorForm() {
   const renderFeatureFields = (featureName: "feature1" | "feature2" | "feature3", label: string) => (
     <Card>
       <CardHeader>
-        <CardTitle>{label}</CardTitle>
+        <CardTitle className="text-base">{label}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <FormField
@@ -519,323 +482,498 @@ export function HomePageEditorForm() {
       <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
         console.error("Form validation errors:", errors);
         alert("Please check the form for errors. Some required fields might be missing.");
-      })} className="space-y-8">
-        <Accordion type="single" collapsible defaultValue="hero" className="w-full">
-          <AccordionItem value="visibility">
-            <AccordionTrigger className="text-lg font-semibold">
-              Section Visibility
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="visibility.hero"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Hero Section</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.browseCategory"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Browse Category</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.whyChooseUs"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Why Choose Us</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.popularDestinations"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Popular Destinations</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.discountBanners"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Discount Banners</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.lastMinuteOffers"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Last Minute Offers</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.testimonials"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Testimonials</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.videoSection"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Video Section</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="visibility.newsSection"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">News Section</FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
+      })} className="space-y-8 pb-20">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Navigation */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} orientation="vertical" className="w-full lg:w-auto flex-1 lg:flex-none lg:min-w-[250px]">
+            <TabsList className="flex flex-col h-auto w-full items-start justify-start gap-1 bg-muted/20 p-2 rounded-lg">
+              <TabsTrigger value="visibility" className="w-full justify-start gap-2">
+                <Eye className="h-4 w-4" /> Visibility
+              </TabsTrigger>
+              <TabsTrigger value="hero" className="w-full justify-start gap-2">
+                <Layout className="h-4 w-4" /> Hero Section
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="w-full justify-start gap-2">
+                <Layout className="h-4 w-4" /> Categories
+              </TabsTrigger>
+              <TabsTrigger value="why-choose-us" className="w-full justify-start gap-2">
+                <Layout className="h-4 w-4" /> Why Choose Us
+              </TabsTrigger>
+              <TabsTrigger value="popular" className="w-full justify-start gap-2">
+                <MapPin className="h-4 w-4" /> Popular Destinations
+              </TabsTrigger>
+              <TabsTrigger value="banners" className="w-full justify-start gap-2">
+                <ImageIcon className="h-4 w-4" /> Banners
+              </TabsTrigger>
+              <TabsTrigger value="offers" className="w-full justify-start gap-2">
+                <Tag className="h-4 w-4" /> Last Minute Offers
+              </TabsTrigger>
+              <TabsTrigger value="video" className="w-full justify-start gap-2">
+                <Video className="h-4 w-4" /> Video Section
+              </TabsTrigger>
+              <TabsTrigger value="news" className="w-full justify-start gap-2">
+                <Newspaper className="h-4 w-4" /> News Section
+              </TabsTrigger>
+              <TabsTrigger value="testimonials" className="w-full justify-start gap-2">
+                <MessageSquare className="h-4 w-4" /> Testimonials
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <AccordionItem value="hero">
-            <AccordionTrigger className="text-lg font-semibold">
-              Hero Section
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  {/* Preview existing hero image */}
-                  {(existingHeroUrl || defaultHomePageData.hero.imageUrl) && (
-                    <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                      <Image
-                        src={existingHeroUrl || defaultHomePageData.hero.imageUrl}
-                        alt={form.getValues("hero.imageAlt") || defaultHomePageData.hero.imageAlt || "Hero Image"}
-                        fill
-                        className="object-cover"
-                        sizes="100vw"
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">
+            <Tabs value={activeTab} className="w-full">
+              {/* Visibility Tab */}
+              <TabsContent value="visibility" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Section Visibility</CardTitle>
+                    <CardDescription>Toggle sections on or off to customize your home page layout.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.keys(defaultHomePageData.visibility).map((key) => (
+                      <FormField
+                        key={key}
+                        control={form.control}
+                        name={`visibility.${key}` as any}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base capitalize">
+                                {key.replace(/([A-Z])/g, " $1").trim()}
+                              </FormLabel>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Hero Tab */}
+              <TabsContent value="hero" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hero Section</CardTitle>
+                    <CardDescription>Customize the main banner of your website.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    {(existingHeroUrl || defaultHomePageData.hero.imageUrl) && (
+                      <div className="relative w-full aspect-video rounded-md overflow-hidden border bg-muted">
+                        <Image
+                          src={existingHeroUrl || defaultHomePageData.hero.imageUrl}
+                          alt="Hero Preview"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <FormField
+                      control={form.control}
+                      name="hero.image"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Background Image</FormLabel>
+                          <FormControl>
+                            <ImageUploader value={field.value || []} onChange={field.onChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="hero.title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Main Title</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={2} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="hero.subtitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Subtitle</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={2} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="hero.imageAlt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Image Alt Text (SEO)</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Categories Tab */}
+              <TabsContent value="categories" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Browse Categories</CardTitle>
+                    <CardDescription>Manage the category shortcuts.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-4">
+                      <FormField
+                        control={form.control}
+                        name="browseCategory.title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="browseCategory.subtitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Subtitle</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} rows={2} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                  )}
-                  <FormField
-                    control={form.control}
-                    name="hero.image"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hero Background Image</FormLabel>
-                        <FormControl>
-                          <ImageUploader
-                            value={field.value || []}
-                            onChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="hero.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Main Title</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="hero.subtitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Subtitle</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="hero.imageAlt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hero Image Alt Text</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Ancient Egyptian temples" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="browseCategory">
-            <AccordionTrigger className="text-lg font-semibold">
-              Browse Category Section
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <FormField
-                    control={form.control}
-                    name="browseCategory.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="browseCategory.subtitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Subtitle</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <FormLabel className="text-base">Categories</FormLabel>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          appendCategory({
-                            label: "New Category",
-                            type: "adventure",
-                            icon: "mountain",
-                          })
-                        }
-                      >
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Category
-                      </Button>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Categories List</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            appendCategory({
+                              label: "New Category",
+                              type: "adventure",
+                              icon: "mountain",
+                            })
+                          }
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Category
+                        </Button>
+                      </div>
+                      <div className="grid gap-4">
+                        {categoryFields.map((field, index) => (
+                          <div key={field.id} className="flex gap-4 items-start border p-4 rounded-lg bg-card">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                              <FormField
+                                control={form.control}
+                                name={`browseCategory.categories.${index}.label`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Label</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`browseCategory.categories.${index}.type`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Type Param</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="e.g. adventure" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`browseCategory.categories.${index}.icon`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Icon</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select icon" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {browseCategoryIconKeys.map((icon) => (
+                                          <SelectItem key={icon} value={icon} className="capitalize">
+                                            {icon}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              onClick={() => removeCategory(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Why Choose Us Tab */}
+              <TabsContent value="why-choose-us" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Why Choose Us</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                     <div className="grid gap-4">
-                      {categoryFields.map((field, index) => (
-                        <Card key={field.id} className="relative p-4">
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2 h-7 w-7"
-                            onClick={() => removeCategory(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <div className="grid md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="whyChooseUs.pretitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="whyChooseUs.title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} rows={2} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="whyChooseUs.image"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Section Image</FormLabel>
+                              <FormControl>
+                                <ImageUploader value={field.value || []} onChange={field.onChange} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {(existingWhyChooseUsUrl || defaultHomePageData.whyChooseUs.imageUrl) && (
+                          <div className="relative w-full h-40 rounded-md overflow-hidden border bg-muted">
+                            <Image
+                              src={existingWhyChooseUsUrl || defaultHomePageData.whyChooseUs.imageUrl}
+                              alt="Why choose us preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="whyChooseUs.imageAlt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Image Alt Text</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="whyChooseUs.badgeValue"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Badge Value</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="25+" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="whyChooseUs.badgeLabel"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Badge Label</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Years Exp." />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {renderFeatureFields("feature1", "Feature 1")}
+                      {renderFeatureFields("feature2", "Feature 2")}
+                      {renderFeatureFields("feature3", "Feature 3")}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Popular Destinations Tab */}
+              <TabsContent value="popular" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Popular Destinations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <FormField
+                      control={form.control}
+                      name="popularDestinations.pretitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pre-title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="popularDestinations.title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="popularDestinations.count"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Tours to Show</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormDescription>Min 3, Max 12</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Discount Banners Tab */}
+              <TabsContent value="banners" className="mt-0">
+                <div className="grid gap-6">
+                  {["banner1", "banner2"].map((bannerKey, idx) => {
+                    // @ts-expect-error - iterating over keys
+                    const banner = form.watch(`discountBanners.${bannerKey}`);
+                    const existingUrl = bannerKey === "banner1" ? existingBanner1Url : existingBanner2Url;
+                    
+                    return (
+                      <Card key={bannerKey}>
+                        <CardHeader>
+                          <CardTitle>Banner {idx + 1}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`discountBanners.${bannerKey}.title` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Title</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`discountBanners.${bannerKey}.description` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} rows={2} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid md:grid-cols-2 gap-4">
                             <FormField
                               control={form.control}
-                              name={`browseCategory.categories.${index}.label`}
+                              name={`discountBanners.${bannerKey}.buttonText` as any}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Label</FormLabel>
+                                  <FormLabel>Button Text</FormLabel>
                                   <FormControl>
                                     <Input {...field} />
                                   </FormControl>
@@ -845,244 +983,127 @@ export function HomePageEditorForm() {
                             />
                             <FormField
                               control={form.control}
-                              name={`browseCategory.categories.${index}.type`}
+                              name={`discountBanners.${bannerKey}.buttonLink` as any}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Type Param</FormLabel>
+                                  <FormLabel>Button Link</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="e.g., adventure" />
+                                    <Input {...field} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <FormField
-                              control={form.control}
-                              name={`browseCategory.categories.${index}.icon`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Icon</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select icon" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="mountain">Mountain</SelectItem>
-                                      <SelectItem value="sailboat">Sailboat</SelectItem>
-                                      <SelectItem value="building2">Building</SelectItem>
-                                      <SelectItem value="utensils">Utensils</SelectItem>
-                                      <SelectItem value="ferrisWheel">Ferris Wheel</SelectItem>
-                                      <SelectItem value="plane">Plane</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
                           </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-2">
-            <AccordionTrigger className="text-lg font-semibold">
-              Why Choose Us Section
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <FormField
-                    control={form.control}
-                    name="whyChooseUs.pretitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pre-title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="whyChooseUs.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {(existingWhyChooseUsUrl || defaultHomePageData.whyChooseUs.imageUrl) && (
-                    <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                      <Image
-                        src={existingWhyChooseUsUrl || defaultHomePageData.whyChooseUs.imageUrl}
-                        alt={form.getValues("whyChooseUs.imageAlt") || defaultHomePageData.whyChooseUs.imageAlt || "Why choose us image"}
-                        fill
-                        className="object-cover"
-                        sizes="100vw"
-                      />
-                    </div>
-                  )}
-                  <FormField
-                    control={form.control}
-                    name="whyChooseUs.image"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section Image</FormLabel>
-                        <FormControl>
-                          <ImageUploader value={field.value || []} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="whyChooseUs.imageAlt"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Image Alt Text</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Adventure travel" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="whyChooseUs.badgeValue"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Badge Value</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="25+" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="whyChooseUs.badgeLabel"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Badge Label</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Years Of Experience" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {renderFeatureFields("feature1", "Feature 1")}
-                    {renderFeatureFields("feature2", "Feature 2")}
-                    {renderFeatureFields("feature3", "Feature 3")}
-                  </div>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="popularDestinations">
-            <AccordionTrigger className="text-lg font-semibold">
-              Popular Destinations
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <FormField
-                    control={form.control}
-                    name="popularDestinations.pretitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pre-title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="popularDestinations.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="popularDestinations.count"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Tours to Show</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} min={3} max={12} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-3">
-            <AccordionTrigger className="text-lg font-semibold">
-              Discount Banners
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Banner 1 (Cyan)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                      {(existingBanner1Url || defaultHomePageData.discountBanners.banner1.imageUrl) && (
-                        <div className="relative w-full h-32 rounded-md overflow-hidden border">
-                          <Image
-                            src={existingBanner1Url || defaultHomePageData.discountBanners.banner1.imageUrl}
-                            alt="Banner 1"
-                            fill
-                            className="object-contain"
+                          <FormField
+                            control={form.control}
+                            name={`discountBanners.${bannerKey}.image` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Banner Image</FormLabel>
+                                <FormControl>
+                                  <ImageUploader value={field.value || []} onChange={field.onChange} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
                           />
-                        </div>
+                          {(existingUrl || (banner as any)?.imageUrl) && (
+                            <div className="relative w-full h-32 rounded-md overflow-hidden border bg-muted">
+                              <Image
+                                src={existingUrl || (banner as any)?.imageUrl}
+                                alt={`Banner ${idx + 1} preview`}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+
+              {/* Last Minute Offers Tab */}
+              <TabsContent value="offers" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Last Minute Offers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <FormField
+                      control={form.control}
+                      name="lastMinuteOffers.discount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Discount Badge (e.g. 20% OFF)</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastMinuteOffers.pretitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pre-title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastMinuteOffers.title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastMinuteOffers.count"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Tours</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Video Section Tab */}
+              <TabsContent value="video" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Video Section</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid gap-4">
                       <FormField
                         control={form.control}
-                        name="discountBanners.banner1.image"
+                        name="videoSection.pretitle"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Banner Image</FormLabel>
+                            <FormLabel>Pre-title</FormLabel>
                             <FormControl>
-                              <ImageUploader
-                                value={field.value || []}
-                                onChange={field.onChange}
-                              />
+                              <Input {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1090,252 +1111,54 @@ export function HomePageEditorForm() {
                       />
                       <FormField
                         control={form.control}
-                        name="discountBanners.banner1.title"
+                        name="videoSection.title"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Title</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Textarea {...field} rows={2} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    <div className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="discountBanners.banner1.description"
+                        name="videoSection.backgroundImage"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>Background Image</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <ImageUploader value={field.value || []} onChange={field.onChange} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
-
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner1.buttonText"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Button Text</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Book Now" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner1.buttonLink"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Button Link</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="/tours" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Banner 2 (Blue)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                      {(existingBanner2Url || defaultHomePageData.discountBanners.banner2.imageUrl) && (
-                        <div className="relative w-full h-32 rounded-md overflow-hidden border">
+                      {(existingVideoBgUrl || defaultHomePageData.videoSection.backgroundImageUrl) && (
+                        <div className="relative w-full h-40 rounded-md overflow-hidden border bg-muted">
                           <Image
-                            src={existingBanner2Url || defaultHomePageData.discountBanners.banner2.imageUrl}
-                            alt="Banner 2"
+                            src={existingVideoBgUrl || defaultHomePageData.videoSection.backgroundImageUrl}
+                            alt="Video background preview"
                             fill
-                            className="object-contain"
+                            className="object-cover"
                           />
                         </div>
                       )}
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner2.image"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Banner Image</FormLabel>
-                            <FormControl>
-                              <ImageUploader
-                                value={field.value || []}
-                                onChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner2.title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner2.description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner2.buttonText"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Button Text</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Book Now" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountBanners.banner2.buttonLink"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Button Link</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="/tours" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
+                    </div>
 
-          <AccordionItem value="item-4">
-            <AccordionTrigger className="text-lg font-semibold">
-              Last Minute Offers
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <FormField
-                    control={form.control}
-                    name="lastMinuteOffers.discount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Text</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="e.g., 50%" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastMinuteOffers.pretitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pre-title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastMinuteOffers.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastMinuteOffers.count"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Offers to Show</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} min={2} max={10} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-5">
-            <AccordionTrigger className="text-lg font-semibold">
-              Testimonials
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="testimonialCount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Testimonials to Show</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} min={1} max={20} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {fields.map((field, index) => (
-                    <Card key={field.id} className="relative p-4">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-7 w-7"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-4 border p-4 rounded-md">
+                        <h4 className="font-medium text-sm">Button 1</h4>
                         <FormField
                           control={form.control}
-                          name={`testimonials.${index}.name`}
+                          name="videoSection.button1Text"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Name</FormLabel>
+                              <FormLabel>Text</FormLabel>
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
@@ -1345,10 +1168,10 @@ export function HomePageEditorForm() {
                         />
                         <FormField
                           control={form.control}
-                          name={`testimonials.${index}.role`}
+                          name="videoSection.button1Link"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Role</FormLabel>
+                              <FormLabel>Link</FormLabel>
                               <FormControl>
                                 <Input {...field} />
                               </FormControl>
@@ -1357,231 +1180,218 @@ export function HomePageEditorForm() {
                           )}
                         />
                       </div>
-                      <FormField
-                        control={form.control}
-                        name={`testimonials.${index}.avatar`}
-                        render={({ field }) => (
-                          <FormItem className="mt-4">
-                            <FormLabel>Avatar URL</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="https://..."
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name={`testimonials.${index}.content`}
-                        render={({ field }) => (
-                          <FormItem className="mt-4">
-                            <FormLabel>Testimonial Text</FormLabel>
-                            <FormControl>
-                              <Textarea {...field} rows={3} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </Card>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() =>
-                      append({ name: "", role: "", avatar: "", content: "" })
-                    }
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Testimonial
-                  </Button>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="item-6">
-            <AccordionTrigger className="text-lg font-semibold">
-              Video Section
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  {/* Preview existing video background */}
-                  {(existingVideoBgUrl || defaultHomePageData.videoSection.backgroundImageUrl) && (
-                    <div className="relative w-full h-40 rounded-md overflow-hidden border">
-                      <Image
-                        src={existingVideoBgUrl || defaultHomePageData.videoSection.backgroundImageUrl || ""}
-                        alt="Video Background"
-                        fill
-                        className="object-cover"
-                        sizes="100vw"
-                      />
+                      <div className="space-y-4 border p-4 rounded-md">
+                        <h4 className="font-medium text-sm">Button 2</h4>
+                        <FormField
+                          control={form.control}
+                          name="videoSection.button2Text"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Text</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="videoSection.button2Link"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Link</FormLabel>
+                              <FormControl>
+                                <Input {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
-                  )}
-                  <FormField
-                    control={form.control}
-                    name="videoSection.backgroundImage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Background Image</FormLabel>
-                        <FormControl>
-                          <ImageUploader
-                            value={field.value || []}
-                            onChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="videoSection.pretitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pre-title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="videoSection.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="videoSection.button1Text"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Button 1 Text</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Find Out More" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="videoSection.button1Link"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Button 1 Link</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="/about" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="videoSection.button2Text"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Button 2 Text</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Watch Video" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="videoSection.button2Link"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Button 2 Link</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="https://youtube.com/..." />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <AccordionItem value="item-7">
-            <AccordionTrigger className="text-lg font-semibold">
-              News & Articles Section
-            </AccordionTrigger>
-            <AccordionContent>
-              <Card className="border-0 shadow-none">
-                <CardContent className="pt-6 grid gap-6">
-                  <FormField
-                    control={form.control}
-                    name="newsSection.pretitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pre-title</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="newsSection.title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={2} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="newsSection.count"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Articles to Show</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} min={1} max={9} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              {/* News Section Tab */}
+              <TabsContent value="news" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>News Section</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <FormField
+                      control={form.control}
+                      name="newsSection.pretitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pre-title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="newsSection.title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="newsSection.count"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Posts</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-        <div className="flex justify-end sticky bottom-0 py-4 bg-background/80 backdrop-blur-sm">
-          <Button type="submit" size="lg">
-            Save Changes
-          </Button>
+              {/* Testimonials Tab */}
+              <TabsContent value="testimonials" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Testimonials</CardTitle>
+                    <CardDescription>Add customer reviews to build trust.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="testimonialCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Count to Show</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Reviews List</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            append({
+                              name: "Happy Customer",
+                              role: "Traveler",
+                              avatar: "",
+                              content: "Great experience!",
+                            })
+                          }
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Review
+                        </Button>
+                      </div>
+                      
+                      <div className="grid gap-4">
+                        {fields.map((field, index) => (
+                          <div key={field.id} className="flex gap-4 items-start border p-4 rounded-lg bg-card relative">
+                            <div className="grid gap-4 flex-1">
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`testimonials.${index}.name`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">Name</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`testimonials.${index}.role`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel className="text-xs">Role</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <FormField
+                                control={form.control}
+                                name={`testimonials.${index}.content`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Content</FormLabel>
+                                    <FormControl>
+                                      <Textarea {...field} rows={2} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive absolute top-2 right-2"
+                              onClick={() => remove(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Sticky Footer for Save Action */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-50 flex justify-end md:pl-64">
+          <div className="container max-w-6xl flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => form.reset()}>
+              Discard Changes
+            </Button>
+            <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> Save Changes
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>
   );
 }
+
+

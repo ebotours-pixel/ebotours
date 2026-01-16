@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createContactMessage } from "@/lib/supabase/contact-messages";
-import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -10,33 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import type { Metadata } from "next";
+import { getAgencySettings, getPageMetadata } from "@/lib/supabase/agency-content";
 
 export async function generateMetadata(): Promise<Metadata> {
-  let agencyName = "Tix and Trips Egypt";
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("settings")
-      .select("data")
-      .eq("id", 1)
-      .maybeSingle();
-
-    if (!error && data) {
-      const settingsData = (
-        data as unknown as
-          | { data?: { agencyName?: string } }
-          | null
-      )?.data;
-
-      if (settingsData?.agencyName) agencyName = settingsData.agencyName;
-    }
-  } catch {}
-
-  return {
-    title: `Contact ${agencyName}`,
-    description: `Get in touch with ${agencyName}. We are here to help you plan your perfect Egypt vacation.`,
-  };
+  return getPageMetadata("contact", {
+    title: "Contact Tix and Trips Egypt",
+    description: "Get in touch with Tix and Trips Egypt. We are here to help you plan your perfect Egypt vacation.",
+  });
 }
 
 export default async function ContactPage({
@@ -54,31 +33,13 @@ export default async function ContactPage({
   let address = "";
 
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("settings")
-      .select("data")
-      .eq("id", 1)
-      .maybeSingle();
+    const settings = await getAgencySettings();
 
-    if (!error && data) {
-      const settingsData = (
-        data as unknown as
-          | {
-              data?: {
-                agencyName?: string;
-                phoneNumber?: string;
-                contactEmail?: string;
-                address?: string;
-              };
-            }
-          | null
-      )?.data;
-
-      agencyName = settingsData?.agencyName ?? agencyName;
-      phoneNumber = settingsData?.phoneNumber ?? phoneNumber;
-      contactEmail = settingsData?.contactEmail ?? contactEmail;
-      address = settingsData?.address ?? address;
+    if (settings && settings.data) {
+      agencyName = settings.data.agencyName ?? agencyName;
+      phoneNumber = settings.data.phoneNumber ?? phoneNumber;
+      contactEmail = settings.data.contactEmail ?? contactEmail;
+      address = settings.data.address ?? address;
     }
   } catch {
   }

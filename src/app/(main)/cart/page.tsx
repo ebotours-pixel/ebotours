@@ -7,6 +7,7 @@ import { useFormStatus } from "react-dom";
 import { useCart } from "@/hooks/use-cart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -50,13 +51,40 @@ function SubmitButton() {
 }
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, getCartTotal, addToCart, clearCart } = useCart();
+  const { 
+    cartItems, 
+    removeFromCart, 
+    getCartTotal, 
+    addToCart, 
+    clearCart,
+    applyPromoCode,
+    removePromoCode,
+    getDiscountAmount,
+    getFinalTotal,
+    promoCode
+  } = useCart();
   const [state, formAction] = useActionState(getAiSuggestions, {
     message: "",
     suggestions: [],
   });
   const [upsellItems, setUpsellItems] = useState<UpsellItem[]>([]);
   const [selectedUpsellVariant, setSelectedUpsellVariant] = useState<Record<string, string>>({});
+  
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+
+  const handleApplyPromo = async () => {
+    if (!promoCodeInput) return;
+    setIsApplyingPromo(true);
+    try {
+      await applyPromoCode(promoCodeInput);
+      setPromoCodeInput("");
+    } catch {
+      // Toast handled in hook
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUpsells = async () => {
@@ -331,6 +359,31 @@ export default function CartPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">${getCartTotal().toLocaleString()}</span>
                 </div>
+                
+                {promoCode ? (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({promoCode.code})</span>
+                    <span>-${getDiscountAmount().toLocaleString()}</span>
+                  </div>
+                ) : null}
+
+                <div className="flex gap-2">
+                   <Input 
+                     placeholder="Promo code" 
+                     value={promoCodeInput} 
+                     onChange={(e) => setPromoCodeInput(e.target.value)}
+                     disabled={!!promoCode} 
+                     className="bg-background"
+                   />
+                   {promoCode ? (
+                      <Button variant="outline" onClick={removePromoCode}>Remove</Button>
+                   ) : (
+                      <Button onClick={handleApplyPromo} disabled={!promoCodeInput || isApplyingPromo} variant="outline">
+                        {isApplyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                      </Button>
+                   )}
+                </div>
+
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxes & fees</span>
                   <span className="text-sm text-muted-foreground">Calculated at checkout</span>
@@ -338,7 +391,7 @@ export default function CartPage() {
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>${getCartTotal().toLocaleString()}</span>
+                  <span>${getFinalTotal().toLocaleString()}</span>
                 </div>
                 <div className="grid gap-2 rounded-2xl border bg-muted/30 p-4 text-sm">
                   <div className="flex items-center justify-between">

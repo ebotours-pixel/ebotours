@@ -34,7 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Loader2 } from "lucide-react";
+import { getAgencySettings, updateAgencySettings, AgencySettingsData } from "@/lib/supabase/agency-content";
 
 const formSchema = z
   .object({
@@ -68,6 +75,18 @@ const formSchema = z
         defaultMethod: z.enum(["cash", "online"]),
       })
       .default({ cash: true, online: true, defaultMethod: "online" }),
+    theme: z.object({
+      primaryColor: z.string().optional(),
+      fontFamily: z.string().optional(),
+    }).optional(),
+    seo: z.object({
+      home: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      about: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      contact: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      tours: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      services: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      blog: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+    }).optional(),
     currentPassword: z.string().optional(),
     newPassword: z.string().optional(),
     confirmPassword: z.string().optional(),
@@ -155,6 +174,10 @@ export default function SettingsPage() {
         online: true,
         defaultMethod: "online",
       },
+      theme: {
+        primaryColor: "#0f172a",
+        fontFamily: "Inter",
+      },
     },
   });
 
@@ -165,19 +188,15 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function loadSettings() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("settings")
-        .select("data, logo_url")
-        .eq("id", 1)
-        .maybeSingle();
-      if (!error && data) {
+      const data = await getAgencySettings();
+
+      if (data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const settingsData = (data as any).data ?? {};
+        const settingsData = data.data ?? {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paymentMethods = (settingsData as any).paymentMethods ?? {};
+        const paymentMethods = settingsData.paymentMethods ?? {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setExistingLogoUrl((data as any).logo_url ?? null);
+        setExistingLogoUrl(data.logo_url ?? null);
         form.reset({
           agencyName: settingsData.agencyName ?? "",
           phoneNumber: settingsData.phoneNumber ?? "",
@@ -210,6 +229,10 @@ export default function SettingsPage() {
             defaultMethod:
               paymentMethods.defaultMethod ??
               (paymentMethods.online === false ? "cash" : "online"),
+          },
+          theme: {
+            primaryColor: settingsData.theme?.primaryColor ?? "#0f172a",
+            fontFamily: settingsData.theme?.fontFamily ?? "Inter",
           },
         });
       }
@@ -245,31 +268,26 @@ export default function SettingsPage() {
       // ignore upload failure
     }
 
-    const payload = {
-      id: 1,
-      data: {
-        agencyName: values.agencyName,
-        phoneNumber: values.phoneNumber,
-        contactEmail: values.contactEmail,
-        address: values.address,
-        tagline: values.tagline ?? "",
-        navLinks: values.navLinks ?? [],
-        aboutUs: values.aboutUs,
-        socialMedia: values.socialMedia,
-        paymentMethods: values.paymentMethods,
-      },
-      logo_url: logoUrl,
-      updated_at: new Date().toISOString(),
+    const settingsData: AgencySettingsData = {
+      agencyName: values.agencyName,
+      phoneNumber: values.phoneNumber,
+      contactEmail: values.contactEmail,
+      address: values.address,
+      tagline: values.tagline ?? "",
+      navLinks: values.navLinks ?? [],
+      aboutUs: values.aboutUs,
+      socialMedia: values.socialMedia,
+      paymentMethods: values.paymentMethods,
+      theme: values.theme,
+      seo: values.seo,
     };
 
-    const { error } = await supabase.from("settings").upsert(payload, {
-      onConflict: "id",
-    });
-    if (error) {
-      alert(`Failed to save settings: ${error.message}`);
-      return;
+    try {
+      await updateAgencySettings(settingsData, logoUrl);
+      alert("Settings saved!");
+    } catch (error) {
+      alert(`Failed to save settings: ${(error as Error).message}`);
     }
-    alert("Settings saved!");
   }
 
   return (
@@ -544,6 +562,133 @@ export default function SettingsPage() {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Theme Customization</CardTitle>
+              <CardDescription>
+                Customize the look and feel of your website.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="theme.primaryColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Primary Color</FormLabel>
+                    <div className="flex items-center gap-4">
+                      <FormControl>
+                        <Input
+                          type="color"
+                          {...field}
+                          className="w-12 h-12 p-1 rounded-md cursor-pointer"
+                        />
+                      </FormControl>
+                      <Input
+                        {...field}
+                        placeholder="#0f172a"
+                        className="max-w-[120px]"
+                      />
+                    </div>
+                    <FormDescription>
+                      The main color used for buttons, links, and highlights.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="theme.fontFamily"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Font Family</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a font" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Inter">Inter (Default)</SelectItem>
+                        <SelectItem value="Playfair Display">Playfair Display (Luxury)</SelectItem>
+                        <SelectItem value="Roboto">Roboto (Modern)</SelectItem>
+                        <SelectItem value="Lato">Lato (Friendly)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The font used for headings and body text.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>SEO & Metadata</CardTitle>
+              <CardDescription>
+                Control page titles, descriptions, and keywords for search engines.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                {["home", "about", "contact", "tours", "services", "blog"].map((page) => (
+                  <AccordionItem key={page} value={page}>
+                    <AccordionTrigger className="capitalize">{page} Page</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      <FormField
+                        control={form.control}
+                        // @ts-expect-error - dynamic path construction
+                        name={`seo.${page}.title`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Meta Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder={`Title for ${page} page`} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        // @ts-expect-error - dynamic path construction
+                        name={`seo.${page}.description`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Meta Description</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder={`Description for ${page} page`} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        // @ts-expect-error - dynamic path construction
+                        name={`seo.${page}.keywords`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Keywords (comma separated)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="travel, egypt, tours" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </CardContent>
           </Card>
 

@@ -1,49 +1,41 @@
-"use client";
 
-import * as React from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { createClient } from "@/lib/supabase/server";
+import { BroadcastBanner } from "@/components/admin/broadcast-banner";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
+import { AdminLayoutShell } from "@/components/admin/layout-shell";
+import { getCurrentAgency } from "@/lib/supabase/agencies";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, setUser] = React.useState<User | null>(null);
-  // const [loading, setLoading] = React.useState(true);
-  const supabase = createClient();
+  const supabase = await createClient();
 
-  React.useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, [supabase.auth]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/admin";
-  };
-
-  // Rely on middleware for auth-based redirects in production.
-  // In the layout, simply render login content when no user is present.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
+    // Should be handled by middleware, but as a fallback:
     return (
-      <div className="flex min-h-screen bg-background">
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      <div className="flex min-h-screen bg-background items-center justify-center">
+        <p>Loading...</p>
       </div>
     );
   }
 
+  // Fetch current agency settings
+  const agency = await getCurrentAgency();
+  const settings = agency?.settings || {};
+
   return (
-    <AdminSidebar user={user} handleSignOut={handleSignOut}>
-      {children}
-    </AdminSidebar>
+    <AdminLayoutShell user={user} settings={settings}>
+      <div className="w-full">
+         <ImpersonationBanner />
+         <BroadcastBanner />
+         {children}
+      </div>
+    </AdminLayoutShell>
   );
 }
-

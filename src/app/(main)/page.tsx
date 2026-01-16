@@ -2,17 +2,22 @@ import React from "react";
 import { getTours } from "@/lib/supabase/tours";
 import { createClient } from "@/lib/supabase/server";
 import HomePageClient from "./home-client";
-import type { HomeContent, Post } from "@/types";
+import type { Post } from "@/types";
+import { getHomePageContent, getPageMetadata } from "@/lib/supabase/agency-content";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("home", {
+    title: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
+    description: "Discover the magic of Egypt with Tix and Trips. We offer curated tours, custom itineraries, and expert guides for an unforgettable experience.",
+  });
+}
 
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Fetch home page content from Supabase
-  const { data: homePageData } = await supabase
-    .from("home_page_content")
-    .select("data")
-    .eq("id", 1)
-    .maybeSingle();
+  // Fetch home page content
+  const homeContent = await getHomePageContent();
     
   // Fetch posts/articles from Supabase
   // Try 'articles' first, if not found (error), try 'posts'
@@ -26,11 +31,6 @@ export default async function HomePage() {
     .limit(3);
 
   const articles = (postsData as unknown as Post[]) || [];
-
-  const homeContent =
-    homePageData?.data && typeof homePageData.data === "object"
-      ? (homePageData.data as HomeContent)
-      : null;
 
   if (!homeContent) {
     return (

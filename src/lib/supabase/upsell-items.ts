@@ -5,6 +5,7 @@ import type { UpsellItem } from "@/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { toCamelCase } from "@/lib/utils";
+import { getCurrentAgencyId } from "@/lib/supabase/agencies";
 
 function ensureUpsellItemDefaults(item: UpsellItem): UpsellItem {
   return {
@@ -44,9 +45,12 @@ function normalizeTargeting(targeting: UpsellItem["targeting"] | undefined) {
 
 export async function getUpsellItems(): Promise<UpsellItem[]> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+
   const { data, error } = await supabase
     .from("upsell_items")
     .select("*")
+    .eq("agency_id", agencyId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -61,10 +65,13 @@ export async function getUpsellItemById(
   id: string,
 ): Promise<UpsellItem | null> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+
   const { data, error } = await supabase
     .from("upsell_items")
     .select("*")
     .eq("id", id)
+    .eq("agency_id", agencyId)
     .single();
 
   if (error) {
@@ -115,6 +122,7 @@ export async function addUpsellItem(
   },
 ) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   const imageUrl = await handleImageUpload(formData.images);
   const variants = normalizeVariants(formData.variants);
@@ -130,6 +138,7 @@ export async function addUpsellItem(
     related_tour_id: formData.relatedTourId,
     image_url: imageUrl, // Store the uploaded image URL
     is_active: formData.isActive,
+    agency_id: agencyId,
   });
 
   if (error) {
@@ -150,6 +159,7 @@ export async function updateUpsellItem(
   },
 ) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   const imageUrl = await handleImageUpload(formData.images, formData.imageUrl); // Pass existing URL
   const variants = normalizeVariants(formData.variants);
@@ -168,7 +178,8 @@ export async function updateUpsellItem(
       image_url: imageUrl, // Update with new or existing URL
       is_active: formData.isActive,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("agency_id", agencyId);
 
   if (error) {
     console.error("Error updating upsell item:", error);
@@ -181,12 +192,14 @@ export async function updateUpsellItem(
 
 export async function deleteUpsellItem(id: string) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   // Optional: Delete image from storage if it exists
   const { data: itemToDelete } = await supabase
     .from("upsell_items")
     .select("image_url")
     .eq("id", id)
+    .eq("agency_id", agencyId)
     .single();
   if (itemToDelete?.image_url) {
     const filePath = itemToDelete.image_url.split("public/")[1]; // Extract path after 'public/'
@@ -203,7 +216,7 @@ export async function deleteUpsellItem(id: string) {
     }
   }
 
-  const { error } = await supabase.from("upsell_items").delete().eq("id", id);
+  const { error } = await supabase.from("upsell_items").delete().eq("id", id).eq("agency_id", agencyId);
 
   if (error) {
     console.error("Error deleting upsell item:", error);

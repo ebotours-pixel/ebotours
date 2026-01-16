@@ -30,7 +30,16 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -48,6 +57,7 @@ export function DataTable<TData, TValue>({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
 
   const table = useReactTable({
     data,
@@ -72,6 +82,17 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  React.useEffect(() => {
+    table.getColumn("bookingDate")?.setFilterValue(dateRange);
+  }, [dateRange, table]);
+
+  const isFiltered = table.getState().columnFilters.length > 0;
+
+  const resetFilters = () => {
+    table.resetColumnFilters();
+    setDateRange(undefined);
+  };
+
   return (
     <div className="rounded-md border">
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -83,8 +104,42 @@ export function DataTable<TData, TValue>({
           onChange={(event) =>
             table.getColumn("customerName")?.setFilterValue(event.target.value)
           }
-          className="w-full sm:max-w-sm"
+          className="w-full sm:max-w-xs"
         />
+        
+        <DateRangePicker 
+          date={dateRange} 
+          setDate={setDateRange} 
+          className="w-full sm:w-auto" 
+        />
+
+        <Select
+          value={(table.getColumn("status")?.getFilterValue() as string) ?? "all"}
+          onValueChange={(value) =>
+            table.getColumn("status")?.setFilterValue(value === "all" ? undefined : value)
+          }
+        >
+          <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="Confirmed">Confirmed</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {isFiltered && (
+          <Button
+            variant="ghost"
+            onClick={resetFilters}
+            className="h-8 px-2 lg:px-3"
+          >
+            Reset
+            <X className="ml-2 h-4 w-4" />
+          </Button>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

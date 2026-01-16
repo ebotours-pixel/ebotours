@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAgencySettings, getPageMetadata } from "@/lib/supabase/agency-content";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -14,33 +14,10 @@ import {
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
-  let agencyName = "Tix and Trips Egypt";
-  let tagline = "Your Gateway to Unforgettable Journeys";
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("settings")
-      .select("data")
-      .eq("id", 1)
-      .maybeSingle();
-
-    if (!error && data) {
-      const settingsData = (
-        data as unknown as
-          | { data?: { aboutUs?: string; agencyName?: string; tagline?: string } }
-          | null
-      )?.data;
-
-      if (settingsData?.agencyName) agencyName = settingsData.agencyName;
-      if (settingsData?.tagline) tagline = settingsData.tagline;
-    }
-  } catch {}
-
-  return {
-    title: `About ${agencyName}`,
-    description: `Learn more about ${agencyName}. ${tagline}`,
-  };
+  return getPageMetadata("about", {
+    title: "About Tix and Trips Egypt",
+    description: "Learn more about Tix and Trips Egypt. Your Gateway to Unforgettable Journeys",
+  });
 }
 
 export default async function AboutPage() {
@@ -49,23 +26,12 @@ export default async function AboutPage() {
   let tagline = "";
 
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("settings")
-      .select("data")
-      .eq("id", 1)
-      .maybeSingle();
+    const settings = await getAgencySettings();
 
-    if (!error && data) {
-      const settingsData = (
-        data as unknown as
-          | { data?: { aboutUs?: string; agencyName?: string; tagline?: string } }
-          | null
-      )?.data;
-
-      agencyName = settingsData?.agencyName ?? agencyName;
-      aboutUs = settingsData?.aboutUs ?? aboutUs;
-      tagline = settingsData?.tagline ?? tagline;
+    if (settings && settings.data) {
+      agencyName = settings.data.agencyName ?? agencyName;
+      aboutUs = settings.data.aboutUs ?? aboutUs;
+      tagline = settings.data.tagline ?? tagline;
     }
   } catch {
   }

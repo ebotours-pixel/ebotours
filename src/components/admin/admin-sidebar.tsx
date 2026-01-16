@@ -12,6 +12,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import {
   Home,
@@ -24,6 +27,9 @@ import {
   LayoutDashboard,
   Tag,
   Mail,
+  Percent,
+  LogOut,
+  MessageCircle,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,22 +43,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import type { User } from "@supabase/supabase-js";
+import { AgencySettings } from "@/types/agency";
 
-const menuItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: Home },
-  { href: "/admin/tours", label: "Tours", icon: Globe },
-  { href: "/admin/bookings", label: "Bookings", icon: Calendar },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/blog", label: "Blog", icon: Newspaper },
-  {
-    href: "/admin/home-page-editor",
-    label: "Home Page Editor",
-    icon: LayoutDashboard,
-  },
-  { href: "/admin/upsell-items", label: "Upsell Items", icon: Tag },
-  { href: "/admin/contact-messages", label: "Contact Messages", icon: Mail },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
-];
+// const menuItems = [
+  //   { href: "/admin/dashboard", label: "Dashboard", icon: Home },
+  //   { href: "/admin/tours", label: "Tours", icon: Globe },
+  //   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+  //   { href: "/admin/customers", label: "Customers", icon: Users },
+  //   { href: "/admin/blog", label: "Blog", icon: Newspaper },
+  //   {
+  //     href: "/admin/home-page-editor",
+  //     label: "Home Page Editor",
+  //     icon: LayoutDashboard,
+  //   },
+  //   { href: "/admin/upsell-items", label: "Upsell Items", icon: Tag },
+  //   { href: "/admin/promotions", label: "Promotions", icon: Percent },
+  //   { href: "/admin/contact-messages", label: "Contact Messages", icon: Mail },
+  //   { href: "/admin/settings", label: "Settings", icon: Settings },
+  // ];
 
 const getPageTitle = (pathname: string) => {
   if (pathname.startsWith("/admin/dashboard")) return "Dashboard";
@@ -61,6 +69,8 @@ const getPageTitle = (pathname: string) => {
   if (pathname.startsWith("/admin/customers")) return "Customers";
   if (pathname.startsWith("/admin/blog")) return "Blog";
   if (pathname.startsWith("/admin/home-page-editor")) return "Home Page Editor";
+  if (pathname.startsWith("/admin/upsell-items")) return "Upsell Items";
+  if (pathname.startsWith("/admin/promotions")) return "Promotions";
   if (pathname.startsWith("/admin/contact-messages")) return "Contact Messages";
   if (pathname.startsWith("/admin/settings")) return "Settings";
   return "Admin";
@@ -70,41 +80,99 @@ export function AdminSidebar({
   user,
   handleSignOut,
   children,
+  settings,
 }: {
   user: User;
   handleSignOut: () => void;
   children: React.ReactNode;
+  settings?: AgencySettings;
 }) {
   const pathname = usePathname();
+
+  // Filter menu items based on settings.modules
+  const modules = settings?.modules || { blog: true, upsell: true, contact: true }; // Default true if undefined
+  
+  // Menu items grouped by category
+  const groups = [
+    {
+      label: "Overview",
+      items: [
+        { href: "/admin/dashboard", label: "Dashboard", icon: Home },
+      ],
+    },
+    {
+      label: "Management",
+      items: [
+        { href: "/admin/tours", label: "Tours", icon: Globe },
+        { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+        { href: "/admin/customers", label: "Customers", icon: Users },
+      ],
+    },
+    {
+      label: "Content",
+      items: [
+        { href: "/admin/blog", label: "Blog", icon: Newspaper },
+        { href: "/admin/home-page-editor", label: "Home Page Editor", icon: LayoutDashboard },
+        { href: "/admin/upsell-items", label: "Upsell Items", icon: Tag },
+        { href: "/admin/promotions", label: "Promotions", icon: Percent },
+      ],
+    },
+    {
+      label: "System",
+      items: [
+        { href: "/admin/contact-messages", label: "Contact Messages", icon: Mail },
+        { href: "/admin/settings", label: "Settings", icon: Settings },
+      ],
+    },
+  ];
+
+  const shouldShowItem = (label: string) => {
+    if (label === "Blog" && modules.blog === false) return false;
+    if (label === "Upsell Items" && modules.upsell === false) return false;
+    if (label === "Contact Messages" && modules.contact === false) return false;
+    return true;
+  };
 
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 px-1 py-2">
             <Logo />
             <div className="flex flex-col">
               <span className="font-headline text-lg font-semibold text-foreground">
-                tix and trips egypt
+                Tourista
               </span>
               <span className="text-xs text-muted-foreground">Admin Panel</span>
             </div>
           </div>
         </SidebarHeader>
-                <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item, index) => (
-              <SidebarMenuItem key={index}>
-                <SidebarMenuButton
-                  href={item.href}
-                  isActive={pathname.startsWith(item.href)}
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+        <SidebarContent>
+          {groups.map((group) => {
+            const visibleItems = group.items.filter((item) => shouldShowItem(item.label));
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {visibleItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          href={item.href}
+                          isActive={pathname.startsWith(item.href)}
+                        >
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          })}
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
@@ -126,15 +194,35 @@ export function AdminSidebar({
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="max-w-[240px] truncate">
-                {user.email}
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">Admin</p>
+                  <p className="text-xs leading-none text-muted-foreground truncate">
+                    {user.email}
+                  </p>
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a 
+                  href="https://wa.me/201095280572" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="cursor-pointer w-full flex items-center"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  <span>Support</span>
+                </a>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

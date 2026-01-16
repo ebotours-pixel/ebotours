@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface ColumnsProps {
@@ -179,6 +179,14 @@ export const columns = ({
     cell: ({ row }) => {
       const date = new Date(row.getValue("bookingDate"));
       return format(date, "PPP");
+    },
+    filterFn: (row, id, value) => {
+      if (!value || !value.from) return true;
+      const rowDate = new Date(row.getValue(id));
+      const from = startOfDay(value.from);
+      const to = value.to ? endOfDay(value.to) : endOfDay(value.from);
+      
+      return isWithinInterval(rowDate, { start: from, end: to });
     },
   },
   {

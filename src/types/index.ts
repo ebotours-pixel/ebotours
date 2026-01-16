@@ -1,3 +1,5 @@
+export * from "./agency";
+
 export type PriceTier = {
   minPeople: number;
   maxPeople: number | null; // null for 'and up'
@@ -117,7 +119,7 @@ export type Customer = {
   id: string;
   name: string;
   email: string;
-  source: "Booking" | "Newsletter";
+  source: "Booking" | "Newsletter" | "Contact";
   status?: "active" | "inactive";
   totalBookings: number;
   totalSpent: number;
@@ -126,6 +128,8 @@ export type Customer = {
   bookings: Booking[];
   posts?: Post[];
   avatarUrl?: string;
+  phone?: string;
+  nationality?: string;
 };
 
 export type Post = {
@@ -274,5 +278,20 @@ export type ContactMessage = {
   subject?: string | null;
   message: string;
   status: ContactMessageStatus;
+  createdAt: string;
+};
+
+export type PromoCode = {
+  id: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  startsAt?: string;
+  expiresAt?: string;
+  usageLimit?: number;
+  usageCount: number;
+  isActive: boolean;
   createdAt: string;
 };

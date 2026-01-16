@@ -7,15 +7,17 @@ import * as z from "zod";
 
 interface TourEditClientProps {
   tour: Tour;
+  categories: string[];
+  destinations: string[];
 }
 
-export function TourEditClient({ tour }: TourEditClientProps) {
+export function TourEditClient({ tour, categories, destinations }: TourEditClientProps) {
   const handleUpdateTour = async (values: z.infer<typeof formSchema>) => {
     const transformedValues = {
       ...values,
-      highlights: values.highlights?.map((h) => JSON.stringify({ value: h.value })).filter(Boolean),
-      includes: values.includes?.map((i) => JSON.stringify({ value: i.value })).filter(Boolean),
-      excludes: values.excludes?.map((e) => JSON.stringify({ value: e.value })).filter(Boolean),
+      highlights: values.highlights?.map((h) => h.value).filter(Boolean),
+      includes: values.includes?.map((i) => i.value).filter(Boolean),
+      excludes: values.excludes?.map((e) => e.value).filter(Boolean),
     };
     await updateTour(tour.id, transformedValues as Omit<Tour, "id">);
   };
@@ -25,6 +27,8 @@ export function TourEditClient({ tour }: TourEditClientProps) {
       initialData={tour}
       onSubmit={handleUpdateTour}
       formType="edit"
+      categories={categories}
+      destinations={destinations}
     />
   );
 }

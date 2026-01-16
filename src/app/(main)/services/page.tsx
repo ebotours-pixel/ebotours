@@ -7,13 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Car, Luggage, PhoneCall } from "lucide-react";
 import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/supabase/agency-content";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Travel Services | Tix and Trips Egypt",
-  description: "Enhance your Egypt trip with our travel services including airport pickup, private transport, SIM cards, and more.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("services", {
+    title: "Travel Services | Tix and Trips Egypt",
+    description: "Enhance your Egypt trip with our travel services including airport pickup, private transport, SIM cards, and more.",
+  });
+}
 
 export default async function ServicesPage() {
   let services = [] as Awaited<ReturnType<typeof getUpsellItems>>;

@@ -1,15 +1,63 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
 
+function hexToHsl(hex: string) {
+  let c = hex.substring(1).split("");
+  if (c.length === 3) {
+    c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+  }
+  const r = parseInt(c[0] + c[1], 16) / 255;
+  const g = parseInt(c[2] + c[3], 16) / 255;
+  const b = parseInt(c[4] + c[5], 16) / 255;
 
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b);
+  let h = 0,
+    s = 0;
+  const l = (max + min) / 2;
 
-export default function MainLayout({
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  // Tailwind uses space separated HSL values without units for the variable
+  // e.g. 222.2 47.4% 11.2%
+  return `${(h * 360).toFixed(1)} ${(s * 100).toFixed(1)}% ${(l * 100).toFixed(1)}%`;
+}
+
+export default async function MainLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getAgencySettings();
+  const theme = settings?.data?.theme;
+
+  const primaryHsl = theme?.primaryColor ? hexToHsl(theme.primaryColor) : null;
+  const fontFamily = theme?.fontFamily;
+
   return (
     <div className="flex flex-col min-h-screen">
+      <style>{`
+        :root {
+          ${primaryHsl ? `--primary: ${primaryHsl};` : ""}
+          ${fontFamily ? `--font-playfair: ${fontFamily}, serif;` : ""}
+        }
+      `}</style>
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">{children}</main>
       <Footer />

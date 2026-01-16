@@ -12,8 +12,23 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Guard admin routes
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/super-admin")) {
     const isLoginPage = pathname === "/admin";
+
+    // Super Admin route check
+    if (pathname === "/admin/super") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/super-admin";
+      return NextResponse.redirect(url);
+    }
+
+    if (pathname.startsWith("/super-admin")) {
+        if (!session) {
+            const url = request.nextUrl.clone();
+            url.pathname = "/admin"; // Redirect to login
+            return NextResponse.redirect(url);
+        }
+    }
 
     // Single-user app: never redirect admin routes to home.
     // Require login only for non-login admin pages.
@@ -48,4 +63,4 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
-
+

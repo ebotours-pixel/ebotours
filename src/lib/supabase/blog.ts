@@ -2,6 +2,7 @@
 
 import { createClient } from "./server";
 import type { Post } from "@/types";
+import { getCurrentAgencyId } from "@/lib/supabase/agencies";
 
 type DbPost = {
   id: string;
@@ -35,12 +36,15 @@ function toPost(row: DbPost): Post {
 
 export async function getPosts(): Promise<Post[]> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+
   try {
     const { data, error } = await supabase
       .from("posts")
       .select(
         "id, slug, title, content, author, status, created_at, updated_at, featured_image, tags",
       )
+      .eq("agency_id", agencyId)
       .order("created_at", { ascending: false });
     
     if (error) {
@@ -57,6 +61,8 @@ export async function getPosts(): Promise<Post[]> {
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+
   try {
     const { data, error } = await supabase
       .from("posts")
@@ -64,6 +70,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
         "id, slug, title, content, author, status, created_at, updated_at, featured_image, tags",
       )
       .eq("slug", slug)
+      .eq("agency_id", agencyId)
       .maybeSingle();
       
     if (error) {
@@ -81,6 +88,8 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
 export async function upsertPost(post: Post): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+
   try {
     const payload = {
       id: post.id,
@@ -93,9 +102,14 @@ export async function upsertPost(post: Post): Promise<{ ok: boolean; error?: str
       updated_at: new Date().toISOString(),
       featured_image: post.featuredImage ?? null,
       tags: post.tags ?? [],
+      agency_id: agencyId,
     };
+    // Note: onConflict: "slug" might need to be "slug, agency_id" if we have a composite unique constraint.
+    // However, if we only have unique constraint on slug, this might fail if multiple agencies use same slug.
+    // Ideally we should update the unique constraint to be (slug, agency_id).
+    // For now, assuming slug is unique globally or we rely on ID.
     const { error } = await supabase.from("posts").upsert(payload, {
-      onConflict: "slug",
+      onConflict: "id", // Use ID for upsert to avoid slug collision issues across agencies if unique constraint is not updated yet
     });
     if (error) throw error;
     return { ok: true };
@@ -107,8 +121,9 @@ export async function upsertPost(post: Post): Promise<{ ok: boolean; error?: str
 
 export async function deletePostBySlug(slug: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
   try {
-    const { error } = await supabase.from("posts").delete().eq("slug", slug);
+    const { error } = await supabase.from("posts").delete().eq("slug", slug).eq("agency_id", agencyId);
     if (error) throw error;
     return { ok: true };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,10 +1,11 @@
-"use client";
-
 import { HomePageEditorForm } from "@/components/admin/home-page-editor/editor";
+import { getHomePageContent } from "@/lib/supabase/agency-content";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePageEditor() {
+export default async function HomePageEditor() {
+  const content = await getHomePageContent();
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,7 +15,7 @@ export default function HomePageEditor() {
           at the bottom to commit your updates.
         </p>
       </div>
-      <HomePageEditorForm />
+      <HomePageEditorForm initialContent={content} />
     </div>
   );
 }

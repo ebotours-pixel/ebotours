@@ -5,6 +5,7 @@ import type { Tour } from "@/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { toCamelCase } from "@/lib/utils";
+import { getCurrentAgencyId } from "@/lib/supabase/agencies";
 
 type GetToursOptions = {
   q?: string;
@@ -30,8 +31,9 @@ function ensureTourDefaults(tour: Tour): Tour {
 export async function getTours(options: GetToursOptions = {}): Promise<Tour[]> {
   const { q, destination, type, limit } = options;
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
-  let query = supabase.from("tours").select("*");
+  let query = supabase.from("tours").select("*").eq("agency_id", agencyId);
 
   if (q && q.trim()) {
     // Search in name (and optionally description)
@@ -68,10 +70,13 @@ export async function getTours(options: GetToursOptions = {}): Promise<Tour[]> {
 
 export async function getTourBySlug(slug: string): Promise<Tour | null> {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
+  
   const { data, error } = await supabase
     .from("tours")
     .select("*")
     .eq("slug", slug)
+    .eq("agency_id", agencyId)
     .single();
 
   if (error) {
@@ -93,6 +98,7 @@ export async function addTour(
   },
 ) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   // 1. Handle image uploads
   const imageUrls: string[] = [];
@@ -140,6 +146,7 @@ export async function addTour(
     availability_description: availabilityDescription,
     pickup_and_dropoff: pickupAndDropoff,
     cancellation_policy: cancellationPolicy,
+    agency_id: agencyId,
   };
 
   // 3. Insert into database
@@ -159,6 +166,7 @@ export async function addTour(
 
 export async function deleteTour(id: string) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   const {
     data: { user },
@@ -185,7 +193,7 @@ export async function deleteTour(id: string) {
     }
   }
 
-  const { error } = await supabase.from("tours").delete().eq("id", id);
+  const { error } = await supabase.from("tours").delete().eq("id", id).eq("agency_id", agencyId);
 
   if (error) {
     console.error("Error deleting tour:", error);
@@ -194,7 +202,8 @@ export async function deleteTour(id: string) {
       const { error: adminError } = await adminClient
         .from("tours")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("agency_id", agencyId);
 
       if (adminError) {
         console.error("Service role delete failed:", adminError);
@@ -215,6 +224,7 @@ export async function deleteTour(id: string) {
 
 export async function updateTour(id: string, formData: Omit<Tour, "id">) {
   const supabase = await createClient();
+  const agencyId = await getCurrentAgencyId();
 
   // 1. Handle image uploads (similar logic as addTour, but consider existing images)
   const imageUrls: string[] = [];
@@ -275,7 +285,8 @@ export async function updateTour(id: string, formData: Omit<Tour, "id">) {
   const { error: updateError } = await supabase
     .from("tours")
     .update(dbData)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("agency_id", agencyId);
 
   if (updateError) {
     console.error("Error updating tour:", updateError);

@@ -50,7 +50,7 @@ const formSchema = z.object({
 type PaymentMethod = z.infer<typeof formSchema>["paymentMethod"];
 
 export default function CheckoutPage() {
-  const { cartItems, getCartTotal } = useCart();
+  const { cartItems, getCartTotal, getDiscountAmount, getFinalTotal, promoCode } = useCart();
   const { toast } = useToast();
   const [paymentConfig, setPaymentConfig] = useState<{
     cash: boolean;
@@ -169,8 +169,8 @@ export default function CheckoutPage() {
         phoneNumber: values.phoneNumber,
         nationality: values.nationality,
         cartItems: cartItems,
-        totalPrice: getCartTotal(),
         paymentMethod: values.paymentMethod,
+        promoCode: promoCode?.code,
       });
 
       if (values.paymentMethod === "cash") {
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
 
       const paymentUrl = await buildKashierHppUrl({
         merchantOrderId: bookingId,
-        amount: getCartTotal(),
+        amount: getFinalTotal(),
         customer: {
           name: values.name,
           email: values.email,
@@ -528,6 +528,12 @@ export default function CheckoutPage() {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-medium">${getCartTotal().toLocaleString()}</span>
                 </div>
+                {promoCode ? (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({promoCode.code})</span>
+                    <span>-${getDiscountAmount().toLocaleString()}</span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Taxes & fees</span>
                   <span className="text-muted-foreground">Calculated at checkout</span>
@@ -536,7 +542,7 @@ export default function CheckoutPage() {
             </CardContent>
             <CardFooter className="flex items-center justify-between border-t pt-4 text-lg font-bold">
               <span>Total</span>
-              <span>${getCartTotal().toLocaleString()}</span>
+              <span>${getFinalTotal().toLocaleString()}</span>
             </CardFooter>
           </Card>
         </div>

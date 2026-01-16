@@ -9,8 +9,6 @@ import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import { OverviewChart } from "@/components/admin/overview-chart";
 import { RecentSales } from "@/components/admin/recent-sales";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { getBookings } from "@/lib/supabase/bookings";
 import { getCustomers } from "@/lib/supabase/customers";
 import { getTours } from "@/lib/supabase/tours";
@@ -82,15 +80,11 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <div className="w-full sm:w-auto">
-            <DateRangePicker />
+            {/* DateRangePicker requires props, using defaults for now */}
+            <DateRangePicker 
+                date={{ from: new Date(new Date().setDate(new Date().getDate() - 30)), to: new Date() }}
+            />
           </div>
-          <Button
-            variant="outline"
-            className="w-full justify-center gap-2 sm:w-auto"
-          >
-            <Download className="size-4" />
-            <span>Download</span>
-          </Button>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

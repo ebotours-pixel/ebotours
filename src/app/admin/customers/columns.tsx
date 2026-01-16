@@ -29,6 +29,7 @@ import {
   ArrowUpDown,
   Newspaper,
   ShoppingBag,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -163,12 +164,15 @@ export const columns = ({ onDelete }: ColumnsProps): ColumnDef<Customer>[] => [
             "font-medium",
             source === "Booking" && "border-sky-500 text-sky-600",
             source === "Newsletter" && "border-amber-500 text-amber-600",
+            source === "Contact" && "border-purple-500 text-purple-600",
           )}
         >
           {source === "Booking" ? (
             <ShoppingBag className="mr-1.5 h-3.5 w-3.5" />
-          ) : (
+          ) : source === "Newsletter" ? (
             <Newspaper className="mr-1.5 h-3.5 w-3.5" />
+          ) : (
+            <Mail className="mr-1.5 h-3.5 w-3.5" />
           )}
           {source}
         </Badge>
