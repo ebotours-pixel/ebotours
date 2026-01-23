@@ -34,8 +34,8 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -102,26 +102,17 @@ export default function CheckoutPage() {
 
     async function loadPaymentMethods() {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("settings")
-          .select("data")
-          .eq("id", 1)
-          .maybeSingle();
+        const settings = await getAgencySettings();
 
         if (cancelled) return;
-        if (error) return;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const settingsData = ((data as any)?.data ?? {}) as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const paymentMethods = (settingsData?.paymentMethods ?? {}) as any;
-
-        const cash = paymentMethods.cash ?? true;
-        const online = paymentMethods.online ?? true;
-        const rawDefault = paymentMethods.defaultMethod;
+        const paymentMethods = settings?.data?.paymentMethods;
+        const cash = paymentMethods?.cash ?? true;
+        const online = paymentMethods?.online ?? true;
         const defaultMethod: PaymentMethod =
-          rawDefault === "cash" || rawDefault === "online" ? rawDefault : "online";
+          paymentMethods?.defaultMethod === "cash" || paymentMethods?.defaultMethod === "online"
+            ? paymentMethods.defaultMethod
+            : "online";
 
         const normalizedCash = cash || (!cash && !online);
         const normalizedOnline = online || (!cash && !online);

@@ -41,7 +41,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Loader2 } from "lucide-react";
-import { getAgencySettings, updateAgencySettings, AgencySettingsData } from "@/lib/supabase/agency-content";
+import {
+  getAgencySettings,
+  updateAgencySettings,
+  AgencySettingsData,
+  PageSeoSettings,
+  SiteSeoSettings,
+} from "@/lib/supabase/agency-content";
 
 const formSchema = z
   .object({
@@ -80,12 +86,24 @@ const formSchema = z
       fontFamily: z.string().optional(),
     }).optional(),
     seo: z.object({
+      site: z.object({
+        siteName: z.string().optional(),
+        defaultTitle: z.string().optional(),
+        titleTemplate: z.string().optional(),
+        description: z.string().optional(),
+        keywords: z.string().optional(),
+        ogImageUrl: z.string().url().or(z.literal("")).optional(),
+        twitterImageUrl: z.string().url().or(z.literal("")).optional(),
+        faviconUrl: z.string().url().or(z.literal("")).optional(),
+      }).optional(),
       home: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
       about: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
       contact: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
       tours: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
       services: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
       blog: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      destination: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
+      tailorMade: z.object({ title: z.string().optional(), description: z.string().optional(), keywords: z.string().optional() }).optional(),
     }).optional(),
     currentPassword: z.string().optional(),
     newPassword: z.string().optional(),
@@ -141,10 +159,11 @@ const formSchema = z
 
 export default function SettingsPage() {
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+  const [loadedSettingsData, setLoadedSettingsData] = useState<AgencySettingsData | null>(null);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      agencyName: "tix and trips egypt",
+      agencyName: "",
       phoneNumber: "",
       contactEmail: "",
       address: "",
@@ -178,6 +197,7 @@ export default function SettingsPage() {
         primaryColor: "#0f172a",
         fontFamily: "Inter",
       },
+      seo: {},
     },
   });
 
@@ -193,6 +213,7 @@ export default function SettingsPage() {
       if (data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const settingsData = data.data ?? {};
+        setLoadedSettingsData(settingsData);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const paymentMethods = settingsData.paymentMethods ?? {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -234,12 +255,56 @@ export default function SettingsPage() {
             primaryColor: settingsData.theme?.primaryColor ?? "#0f172a",
             fontFamily: settingsData.theme?.fontFamily ?? "Inter",
           },
+          seo: settingsData.seo ?? {},
         });
       }
     }
     loadSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  type FormValues = z.infer<typeof formSchema>;
+  type FormSeo = FormValues["seo"];
+  type FormSiteSeo = NonNullable<NonNullable<FormSeo>["site"]>;
+  type FormPageSeo = PageSeoSettings;
+
+  const mergeSiteSeo = (
+    base: SiteSeoSettings | undefined,
+    incoming: FormSiteSeo | undefined,
+  ): SiteSeoSettings | undefined => {
+    if (!base && !incoming) return undefined;
+    return { ...(base ?? {}), ...(incoming ?? {}) };
+  };
+
+  const mergePageSeo = (
+    base: FormPageSeo | undefined,
+    incoming: FormPageSeo | undefined,
+  ): PageSeoSettings | undefined => {
+    if (!base && !incoming) return undefined;
+    return { ...(base ?? {}), ...(incoming ?? {}) };
+  };
+
+  const mergeSeo = (
+    base: AgencySettingsData["seo"] | undefined,
+    incoming: FormSeo | undefined,
+  ): AgencySettingsData["seo"] | undefined => {
+    if (!base && !incoming) return undefined;
+
+    const b = base ?? {};
+    const i = incoming ?? {};
+
+    return {
+      site: mergeSiteSeo(b.site, i.site),
+      home: mergePageSeo(b.home, i.home),
+      about: mergePageSeo(b.about, i.about),
+      contact: mergePageSeo(b.contact, i.contact),
+      tours: mergePageSeo(b.tours, i.tours),
+      services: mergePageSeo(b.services, i.services),
+      destination: mergePageSeo(b.destination, i.destination),
+      tailorMade: mergePageSeo(b.tailorMade, i.tailorMade),
+      blog: mergePageSeo(b.blog, i.blog),
+    };
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const supabase = createClient();
@@ -268,7 +333,7 @@ export default function SettingsPage() {
       // ignore upload failure
     }
 
-    const settingsData: AgencySettingsData = {
+    const nextSettingsData: AgencySettingsData = {
       agencyName: values.agencyName,
       phoneNumber: values.phoneNumber,
       contactEmail: values.contactEmail,
@@ -279,11 +344,16 @@ export default function SettingsPage() {
       socialMedia: values.socialMedia,
       paymentMethods: values.paymentMethods,
       theme: values.theme,
-      seo: values.seo,
+      seo: mergeSeo(loadedSettingsData?.seo, values.seo),
     };
 
     try {
-      await updateAgencySettings(settingsData, logoUrl);
+      const mergedSettingsData: AgencySettingsData = {
+        ...(loadedSettingsData ?? {}),
+        ...nextSettingsData,
+      };
+
+      await updateAgencySettings(mergedSettingsData, logoUrl);
       alert("Settings saved!");
     } catch (error) {
       alert(`Failed to save settings: ${(error as Error).message}`);
@@ -638,20 +708,144 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="space-y-4 pb-6">
+                <FormField
+                  control={form.control}
+                  name={"seo.site.siteName" as never}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Site Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your brand name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name={"seo.site.defaultTitle" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Default browser title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"seo.site.titleTemplate" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title Template</FormLabel>
+                        <FormControl>
+                          <Input placeholder="%s | Your Brand" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name={"seo.site.description" as never}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Site Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Default meta description" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={"seo.site.keywords" as never}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Default Keywords (comma separated)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="travel, tours, holidays" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name={"seo.site.ogImageUrl" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OpenGraph Image URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"seo.site.twitterImageUrl" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Twitter Image URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={"seo.site.faviconUrl" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Favicon URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
               <Accordion type="single" collapsible className="w-full">
-                {["home", "about", "contact", "tours", "services", "blog"].map((page) => (
-                  <AccordionItem key={page} value={page}>
-                    <AccordionTrigger className="capitalize">{page} Page</AccordionTrigger>
+                {[
+                  { key: "home", label: "Home" },
+                  { key: "about", label: "About" },
+                  { key: "contact", label: "Contact" },
+                  { key: "tours", label: "Tours" },
+                  { key: "services", label: "Services" },
+                  { key: "destination", label: "Destination" },
+                  { key: "tailorMade", label: "Tailor Made" },
+                  { key: "blog", label: "Blog" },
+                ].map((page) => (
+                  <AccordionItem key={page.key} value={page.key}>
+                    <AccordionTrigger>{page.label} Page</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
                       <FormField
                         control={form.control}
                         // @ts-expect-error - dynamic path construction
-                        name={`seo.${page}.title`}
+                        name={`seo.${page.key}.title`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Meta Title</FormLabel>
                             <FormControl>
-                              <Input placeholder={`Title for ${page} page`} {...field} />
+                              <Input placeholder={`Title for ${page.label} page`} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -660,12 +854,12 @@ export default function SettingsPage() {
                       <FormField
                         control={form.control}
                         // @ts-expect-error - dynamic path construction
-                        name={`seo.${page}.description`}
+                        name={`seo.${page.key}.description`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Meta Description</FormLabel>
                             <FormControl>
-                              <Textarea placeholder={`Description for ${page} page`} {...field} />
+                              <Textarea placeholder={`Description for ${page.label} page`} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -674,7 +868,7 @@ export default function SettingsPage() {
                       <FormField
                         control={form.control}
                         // @ts-expect-error - dynamic path construction
-                        name={`seo.${page}.keywords`}
+                        name={`seo.${page.key}.keywords`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Keywords (comma separated)</FormLabel>

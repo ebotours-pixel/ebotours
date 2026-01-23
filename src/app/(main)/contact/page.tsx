@@ -13,8 +13,8 @@ import { getAgencySettings, getPageMetadata } from "@/lib/supabase/agency-conten
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("contact", {
-    title: "Contact Tix and Trips Egypt",
-    description: "Get in touch with Tix and Trips Egypt. We are here to help you plan your perfect Egypt vacation.",
+    title: "Contact",
+    description: "Get in touch with us to plan your next trip.",
   });
 }
 
@@ -47,7 +47,7 @@ export default async function ContactPage({
   const displayAgencyName =
     typeof agencyName === "string" && agencyName.trim().length > 0
       ? agencyName
-      : "tix and trips egypt";
+      : "Travel Agency";
 
   async function submit(formData: FormData) {
     "use server";

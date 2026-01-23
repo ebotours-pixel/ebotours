@@ -1,11 +1,14 @@
 import React from "react";
 import { TailorMadeForm } from "./tailor-made-form";
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/supabase/agency-content";
 
-export const metadata: Metadata = {
-  title: "Tailor Made Tours | Create Your Dream Egypt Vacation",
-  description: "Customize your perfect Egypt tour itinerary with our AI-powered planner. Select your preferences, dates, and budget for a personalized experience.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("tailorMade", {
+    title: "Tailor Made",
+    description: "Build a custom itinerary based on your dates, preferences, and budget.",
+  });
+}
 
 export default function TailorMadePage() {
   return (

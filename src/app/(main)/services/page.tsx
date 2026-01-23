@@ -13,8 +13,8 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("services", {
-    title: "Travel Services | Tix and Trips Egypt",
-    description: "Enhance your Egypt trip with our travel services including airport pickup, private transport, SIM cards, and more.",
+    title: "Services",
+    description: "Add travel services like transport, pickup, and extras.",
   });
 }
 

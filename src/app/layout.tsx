@@ -4,6 +4,8 @@ import "./globals.css";
 import { CartProvider } from "@/hooks/use-cart";
 import { WishlistProvider } from "@/hooks/use-wishlist";
 import { Toaster } from "@/components/ui/toaster";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
+import { getCurrentAgency } from "@/lib/supabase/agencies";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ 
@@ -12,39 +14,103 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tixandtripsegypt.com"),
-  title: {
-    default: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
-    template: "%s | Tix and Trips Egypt",
-  },
-  description: "Explore the wonders of Egypt with Tix and Trips. We offer curated tours, custom travel experiences, and expert guides to the Pyramids, Luxor, Aswan, and beyond.",
-  keywords: ["Egypt tours", "travel Egypt", "Pyramids of Giza", "Luxor tours", "Aswan cruises", "tailor-made Egypt trips", "vacation in Egypt", "Nile cruise"],
-  openGraph: {
-    title: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
-    description: "Discover the magic of Egypt with our premium tours and travel packages. From the Pyramids to the Nile, we create memories that last a lifetime.",
-    url: "/",
-    siteName: "Tix and Trips Egypt",
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Tix and Trips Egypt",
-    description: "Explore the wonders of Egypt with Tix and Trips. Custom tours and unforgettable experiences.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+function toUrl(value: string | undefined | null) {
+  if (!value) return null;
+  try {
+    return new URL(value);
+  } catch {
+    try {
+      return new URL(`https://${value}`);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function ensureTemplate(value: string, fallback: string) {
+  const raw = value?.trim();
+  if (!raw) return fallback;
+  if (raw.includes("%s")) return raw;
+  return `%s | ${raw}`;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  let settings: Awaited<ReturnType<typeof getAgencySettings>> | null = null;
+  let agency: Awaited<ReturnType<typeof getCurrentAgency>> | null = null;
+
+  try {
+    [settings, agency] = await Promise.all([getAgencySettings(), getCurrentAgency()]);
+  } catch {
+    settings = null;
+    agency = null;
+  }
+
+  const site = settings?.data?.seo?.site;
+  const siteName =
+    site?.siteName ||
+    settings?.data?.agencyName ||
+    agency?.name ||
+    "Travel Agency";
+
+  const baseUrl =
+    toUrl(agency?.domain) ||
+    toUrl(process.env.NEXT_PUBLIC_APP_URL) ||
+    toUrl("http://localhost:3000")!;
+
+  const defaultTitle = site?.defaultTitle?.trim() || siteName;
+  const template = ensureTemplate(site?.titleTemplate || "", `%s | ${siteName}`);
+  const description = site?.description?.trim() || "";
+
+  const keywords = site?.keywords
+    ? site.keywords.split(",").map((k) => k.trim()).filter(Boolean)
+    : undefined;
+
+  const ogImageUrl = site?.ogImageUrl?.trim() || undefined;
+  const twitterImageUrl = site?.twitterImageUrl?.trim() || ogImageUrl;
+  const faviconUrl = site?.faviconUrl?.trim() || undefined;
+
+  return {
+    metadataBase: baseUrl,
+    title: {
+      default: defaultTitle,
+      template,
+    },
+    description,
+    keywords,
+    icons: faviconUrl
+      ? {
+          icon: [{ url: faviconUrl }],
+          shortcut: [{ url: faviconUrl }],
+        }
+      : undefined,
+    openGraph: {
+      title: defaultTitle,
+      description,
+      url: "/",
+      siteName,
+      locale: "en_US",
+      type: "website",
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
+    },
+    twitter: {
+      card: (twitterImageUrl ? "summary_large_image" : "summary") as "summary" | "summary_large_image",
+      title: siteName,
+      description,
+      images: twitterImageUrl ? [twitterImageUrl] : undefined,
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-};
+  };
+}
 
 import { LanguageProvider } from "@/hooks/use-language";
 import { CurrencyProvider } from "@/hooks/use-currency";

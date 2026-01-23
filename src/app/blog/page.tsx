@@ -6,8 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Calendar, Clock, Search, User } from "lucide-react";
+import { getPageMetadata } from "@/lib/supabase/agency-content";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("blog", {
+    title: "Blog",
+    description: "Travel ideas, guides, and tips.",
+  });
+}
 
 function stripText(value: string) {
   return value.replace(/\s+/g, " ").trim();

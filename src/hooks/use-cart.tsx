@@ -44,10 +44,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [promoCode, setPromoCode] = useState<PromoCode | null>(null);
   const { toast } = useToast();
-  const CART_STORAGE_KEY = "tix-and-trips-egypt-cart";
-  const PROMO_STORAGE_KEY = "tix-and-trips-egypt-promo";
 
   useEffect(() => {
+    const host = typeof window === "undefined" ? "app" : window.location.host;
+    const CART_STORAGE_KEY = `${host}-cart`;
+    const PROMO_STORAGE_KEY = `${host}-promo`;
     try {
       const storedCart = localStorage.getItem(CART_STORAGE_KEY);
       if (storedCart) {
@@ -63,6 +64,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const host = typeof window === "undefined" ? "app" : window.location.host;
+    const CART_STORAGE_KEY = `${host}-cart`;
+    const PROMO_STORAGE_KEY = `${host}-promo`;
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
       if (promoCode) {

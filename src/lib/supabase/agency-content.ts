@@ -13,6 +13,17 @@ export type PageSeoSettings = {
   keywords?: string;
 };
 
+export type SiteSeoSettings = {
+  siteName?: string;
+  defaultTitle?: string;
+  titleTemplate?: string;
+  description?: string;
+  keywords?: string;
+  ogImageUrl?: string;
+  twitterImageUrl?: string;
+  faviconUrl?: string;
+};
+
 export type AgencySettingsData = {
   agencyName?: string;
   phoneNumber?: string;
@@ -37,12 +48,15 @@ export type AgencySettingsData = {
     fontFamily?: string;
   };
   seo?: {
+    site?: SiteSeoSettings;
     home?: PageSeoSettings;
     about?: PageSeoSettings;
     contact?: PageSeoSettings;
     tours?: PageSeoSettings;
     services?: PageSeoSettings;
     blog?: PageSeoSettings;
+    destination?: PageSeoSettings;
+    tailorMade?: PageSeoSettings;
   };
   tourDestinations?: string[];
   tourCategories?: string[];
@@ -111,6 +125,11 @@ export async function updateAgencySettings(
   revalidatePath("/");
   revalidatePath("/about");
   revalidatePath("/contact");
+  revalidatePath("/tours");
+  revalidatePath("/services");
+  revalidatePath("/blog");
+  revalidatePath("/destination");
+  revalidatePath("/tailor-made");
   revalidatePath("/admin/settings");
 }
 
@@ -166,7 +185,15 @@ export async function updateHomePageContent(content: HomeContent) {
 }
 
 export async function getPageMetadata(
-  page: "home" | "about" | "contact" | "tours" | "services" | "blog",
+  page:
+    | "home"
+    | "about"
+    | "contact"
+    | "tours"
+    | "services"
+    | "blog"
+    | "destination"
+    | "tailorMade",
   defaults?: { title?: string; description?: string }
 ): Promise<Metadata> {
   let settings;
@@ -176,11 +203,29 @@ export async function getPageMetadata(
     // ignore
   }
 
+  const site = settings?.data?.seo?.site;
   const seo = settings?.data?.seo?.[page];
   
-  const title = seo?.title || defaults?.title || "Tix and Trips Egypt";
-  const description = seo?.description || defaults?.description || "";
-  const keywords = seo?.keywords ? seo.keywords.split(",").map(k => k.trim()) : undefined;
+  const siteName =
+    site?.siteName ||
+    settings?.data?.agencyName ||
+    "Travel Agency";
+
+  const title =
+    seo?.title ||
+    defaults?.title ||
+    site?.defaultTitle ||
+    siteName;
+  const description =
+    seo?.description ||
+    defaults?.description ||
+    site?.description ||
+    "";
+
+  const keywordsSource = seo?.keywords || site?.keywords;
+  const keywords = keywordsSource
+    ? keywordsSource.split(",").map((k) => k.trim()).filter(Boolean)
+    : undefined;
 
   return {
     title,

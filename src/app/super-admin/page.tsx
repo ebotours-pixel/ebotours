@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAgencySlug } from "@/lib/supabase/agencies";
 import { getAllBroadcasts } from "@/lib/supabase/broadcasts";
+import { cookies } from "next/headers";
 import {
   Card,
   CardContent,
@@ -35,7 +36,8 @@ export default async function SuperAdminPage() {
   // Fetch Broadcasts
   const broadcasts = await getAllBroadcasts();
   const currentSlug = await getCurrentAgencySlug();
-  const isOverridden = currentSlug !== (process.env.NEXT_PUBLIC_AGENCY_SLUG || "tix-and-trips");
+  const cookieStore = await cookies();
+  const isOverridden = !!cookieStore.get("admin_agency_override")?.value;
 
   // Calculate Stats
   const totalAgencies = agencies?.length || 0;

@@ -6,8 +6,8 @@ import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, ArrowRight
 import { Logo } from "@/components/logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/hooks/use-language";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
 
 type SettingsData = {
   agencyName?: string;
@@ -53,16 +53,9 @@ export function Footer() {
   React.useEffect(() => {
     const loadSettings = async () => {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("settings")
-          .select("data, logo_url")
-          .eq("id", 1)
-          .maybeSingle();
-        if (!error && data) {
-          const settingsData = data as unknown as { data: SettingsData; logo_url: string | null };
-          setSettings({ data: settingsData.data || {}, logo_url: settingsData.logo_url || null });
-        }
+        const data = await getAgencySettings();
+        if (!data) return;
+        setSettings({ data: (data.data || {}) as SettingsData, logo_url: data.logo_url || null });
       } catch {
         // ignore
       }
@@ -70,7 +63,7 @@ export function Footer() {
     loadSettings();
   }, []);
 
-  const agencyName = settings?.data?.agencyName || "tix and trips egypt";
+  const agencyName = settings?.data?.agencyName || "Travel Agency";
   const tagline = settings?.data?.tagline || "";
   const contactEmail = settings?.data?.contactEmail || "";
   const phoneNumber = settings?.data?.phoneNumber || "";

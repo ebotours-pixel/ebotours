@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, MapPin } from "lucide-react";
 import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/supabase/agency-content";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Destinations in Egypt",
-  description: "Explore top destinations in Egypt including Cairo, Luxor, Aswan, Hurghada, and more. Find the perfect tour for your next adventure.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("destination", {
+    title: "Destinations",
+    description: "Explore destinations and find the perfect tour for your next adventure.",
+  });
+}
 
 type DestinationCard = {
   name: string;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
-import { getPageMetadata } from "@/lib/supabase/agency-content";
+import { getAgencySettings, getPageMetadata } from "@/lib/supabase/agency-content";
 
 export async function generateMetadata({
   searchParams,
@@ -16,16 +16,25 @@ export async function generateMetadata({
   const destination = typeof resolved?.destination === "string" ? resolved.destination : "";
   const type = typeof resolved?.type === "string" ? resolved.type : "";
 
+  let agencyName = "";
+  try {
+    const settings = await getAgencySettings();
+    agencyName = settings?.data?.agencyName || "";
+  } catch {
+    agencyName = "";
+  }
+  const brand = agencyName.trim() || "our agency";
+
   if (destination || type) {
     let title = "All Tours";
-    let description = "Browse our wide selection of tours and travel experiences in Egypt.";
+    let description = "Browse our selection of tours and travel experiences.";
 
     if (destination) {
       title = `${destination} Tours`;
-      description = `Find the best tours in ${destination}. Book your perfect ${destination} adventure with Tix and Trips Egypt.`;
+      description = `Find the best tours in ${destination}. Book your perfect ${destination} adventure with ${brand}.`;
     } else if (type) {
       title = `${type} Tours`;
-      description = `Explore our ${type} tours in Egypt. Unforgettable experiences await.`;
+      description = `Explore our ${type} tours. Unforgettable experiences await.`;
     }
 
     return {
@@ -35,8 +44,8 @@ export async function generateMetadata({
   }
 
   return getPageMetadata("tours", {
-    title: "All Tours",
-    description: "Browse our wide selection of tours and travel experiences in Egypt.",
+    title: "Tours",
+    description: "Browse our selection of tours and travel experiences.",
   });
 }
 

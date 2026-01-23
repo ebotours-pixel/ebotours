@@ -8,8 +8,8 @@ import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("home", {
-    title: "Tix and Trips Egypt - Your Gateway to Unforgettable Journeys",
-    description: "Discover the magic of Egypt with Tix and Trips. We offer curated tours, custom itineraries, and expert guides for an unforgettable experience.",
+    title: "Home",
+    description: "Explore tours, experiences, and travel services.",
   });
 }
 

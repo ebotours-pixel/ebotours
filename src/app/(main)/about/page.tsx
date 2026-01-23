@@ -15,8 +15,8 @@ import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("about", {
-    title: "About Tix and Trips Egypt",
-    description: "Learn more about Tix and Trips Egypt. Your Gateway to Unforgettable Journeys",
+    title: "About",
+    description: "Learn more about our team, values, and travel expertise.",
   });
 }
 
@@ -39,7 +39,7 @@ export default async function AboutPage() {
   const displayAgencyName =
     typeof agencyName === "string" && agencyName.trim().length > 0
       ? agencyName
-      : "tix and trips egypt";
+      : "Travel Agency";
 
   const aboutParagraphs = aboutUs
     .split(/\n+/)

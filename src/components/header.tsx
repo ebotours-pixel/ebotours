@@ -35,9 +35,7 @@ import type { Currency } from "@/hooks/use-currency";
 import { useLanguage, languages } from "@/hooks/use-language";
 import { useCurrency, currencies } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
-
-
-import { createClient } from "@/lib/supabase/client";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
 
 type SettingsData = {
   agencyName?: string;
@@ -247,21 +245,12 @@ export function Header() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("settings")
-          .select("data, logo_url")
-          .eq("id", 1)
-          .maybeSingle();
-        if (!error && data) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setSettings({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: ((data as any).data || {}) as SettingsData,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            logo_url: (data as any).logo_url || null,
-          });
-        }
+        const data = await getAgencySettings();
+        if (!data) return;
+        setSettings({
+          data: (data.data || {}) as SettingsData,
+          logo_url: data.logo_url || null,
+        });
       } catch {
         // ignore
       }
@@ -292,11 +281,11 @@ export function Header() {
           >
             <Logo
               logoUrl={settings?.logo_url ?? undefined}
-              alt={settings?.data?.agencyName || "tix and trips egypt"}
+              alt={settings?.data?.agencyName || "Travel Agency"}
             />
             <div className="hidden sm:block">
               <span className="font-headline text-xl md:text-2xl font-bold text-foreground">
-                {settings?.data?.agencyName || "tix and trips egypt"}
+                {settings?.data?.agencyName || "Travel Agency"}
               </span>
               {settings?.data?.tagline ? (
                 <p className="text-[10px] md:text-xs text-muted-foreground">

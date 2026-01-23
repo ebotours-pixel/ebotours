@@ -25,9 +25,10 @@ const WishlistContext = createContext<WishlistContextType | undefined>(
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [wishlistItems, setWishlistItems] = useState<Tour[]>([]);
   const { toast } = useToast();
-  const WISHLIST_STORAGE_KEY = "tix-and-trips-egypt-wishlist";
 
   useEffect(() => {
+    const host = typeof window === "undefined" ? "app" : window.location.host;
+    const WISHLIST_STORAGE_KEY = `${host}-wishlist`;
     try {
       const storedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
       if (storedWishlist) {
@@ -39,6 +40,8 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const host = typeof window === "undefined" ? "app" : window.location.host;
+    const WISHLIST_STORAGE_KEY = `${host}-wishlist`;
     try {
       localStorage.setItem(
         WISHLIST_STORAGE_KEY,
