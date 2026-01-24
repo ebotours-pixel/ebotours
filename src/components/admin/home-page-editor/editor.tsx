@@ -302,7 +302,17 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
       testimonialCount: initialContent.testimonialCount ?? defaultHomePageData.testimonialCount,
   } : defaultHomePageData;
 
-  const [existingHeroUrl] = useState<string | null>(initialContent?.hero?.imageUrl || null);
+  const [existingHeroUrls, setExistingHeroUrls] = useState<string[]>(() => {
+    const hero = initialContent?.hero;
+    const fromArray = Array.isArray(hero?.imageUrls)
+      ? hero.imageUrls.filter(
+          (value): value is string => typeof value === "string" && value.trim().length > 0,
+        )
+      : [];
+    if (fromArray.length > 0) return fromArray;
+    const single = typeof hero?.imageUrl === "string" ? hero.imageUrl.trim() : "";
+    return single ? [single] : [];
+  });
   const [existingBanner1Url] = useState<string | null>(initialContent?.discountBanners?.banner1?.imageUrl || null);
   const [existingBanner2Url] = useState<string | null>(initialContent?.discountBanners?.banner2?.imageUrl || null);
   const [existingVideoBgUrl] = useState<string | null>(initialContent?.videoSection?.backgroundImageUrl || null);
@@ -353,19 +363,32 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
   async function onSubmit(values: z.infer<typeof formSchema>) {
     
     // Handle uploads
-    const heroFile = values.hero?.image && values.hero.image[0];
+    const heroFiles = Array.isArray(values.hero?.image) ? values.hero.image : [];
     const whyChooseUsFile = values.whyChooseUs?.image && values.whyChooseUs.image[0];
     const banner1File = values.discountBanners?.banner1?.image && values.discountBanners.banner1.image[0];
     const banner2File = values.discountBanners?.banner2?.image && values.discountBanners.banner2.image[0];
     const videoBgFile = values.videoSection?.backgroundImage && values.videoSection.backgroundImage[0];
 
-    const newHeroUrl = await handleImageUpload(heroFile, "hero");
+    const uploadedHeroUrls = (
+      await Promise.all(
+        heroFiles.map((file, idx) => handleImageUpload(file as any, `hero-${idx + 1}`)),
+      )
+    ).filter((value): value is string => typeof value === "string" && value.trim().length > 0);
     const newWhyChooseUsUrl = await handleImageUpload(whyChooseUsFile, "why-choose-us");
     const newBanner1Url = await handleImageUpload(banner1File, "banner1");
     const newBanner2Url = await handleImageUpload(banner2File, "banner2");
     const newVideoBgUrl = await handleImageUpload(videoBgFile, "video-bg");
 
-    const heroUrl = newHeroUrl || existingHeroUrl || defaultHomePageData.hero.imageUrl;
+    const seenHeroUrls = new Set<string>();
+    const nextHeroUrls = [...existingHeroUrls, ...uploadedHeroUrls].filter((url) => {
+      const normalized = typeof url === "string" ? url.trim() : "";
+      if (!normalized) return false;
+      if (seenHeroUrls.has(normalized)) return false;
+      seenHeroUrls.add(normalized);
+      return true;
+    });
+
+    const heroUrl = nextHeroUrls[0] || defaultHomePageData.hero.imageUrl;
     const whyChooseUsUrl =
       newWhyChooseUsUrl || existingWhyChooseUsUrl || defaultHomePageData.whyChooseUs.imageUrl;
     const banner1Url =
@@ -392,6 +415,7 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
         title: values.hero.title,
         subtitle: values.hero.subtitle,
         imageUrl: heroUrl,
+        imageUrls: nextHeroUrls,
         imageAlt: values.hero.imageAlt,
       },
       whyChooseUs: {
@@ -565,25 +589,53 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                     <CardDescription>Customize the main banner of your website.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-6">
-                    {(existingHeroUrl || defaultHomePageData.hero.imageUrl) && (
+                    {existingHeroUrls.length > 0 ? (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {existingHeroUrls.map((url) => (
+                          <div
+                            key={url}
+                            className="relative aspect-video overflow-hidden rounded-md border bg-muted"
+                          >
+                            <Image
+                              src={url}
+                              alt="Hero Preview"
+                              fill
+                              className="object-cover"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute right-2 top-2 h-8 w-8"
+                              onClick={() =>
+                                setExistingHeroUrls((prev) => prev.filter((item) => item !== url))
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : defaultHomePageData.hero.imageUrl ? (
                       <div className="relative w-full aspect-video rounded-md overflow-hidden border bg-muted">
                         <Image
-                          src={existingHeroUrl || defaultHomePageData.hero.imageUrl}
+                          src={defaultHomePageData.hero.imageUrl}
                           alt="Hero Preview"
                           fill
                           className="object-cover"
                         />
                       </div>
-                    )}
+                    ) : null}
                     <FormField
                       control={form.control}
                       name="hero.image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Background Image</FormLabel>
+                          <FormLabel>Hero Images</FormLabel>
                           <FormControl>
                             <ImageUploader value={field.value || []} onChange={field.onChange} />
                           </FormControl>
+                          <FormDescription>Upload multiple images for the auto slider.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

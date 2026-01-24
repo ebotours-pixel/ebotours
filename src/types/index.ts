@@ -173,8 +173,9 @@ export type Testimonial = {
 };
 
 export type HeroSection = {
-  imageUrl: string;
-  imageAlt: string;
+  imageUrl?: string;
+  imageUrls?: string[];
+  imageAlt?: string;
   title: string;
   subtitle: string;
 };

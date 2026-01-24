@@ -50,7 +50,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { motion, Variants } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
 import { useCurrency } from "@/hooks/use-currency";
 
@@ -187,6 +187,32 @@ export default function HomePageClient({
     router.push(`/tours?${params.toString()}`);
   };
   
+  const hero = homeContent?.hero;
+  const heroImages = React.useMemo(() => {
+    const fromArray = Array.isArray(hero?.imageUrls)
+      ? hero.imageUrls.filter(
+          (value): value is string => typeof value === "string" && value.trim().length > 0,
+        )
+      : [];
+    if (fromArray.length > 0) return fromArray;
+    const single = typeof hero?.imageUrl === "string" ? hero.imageUrl.trim() : "";
+    return single ? [single] : [];
+  }, [hero]);
+
+  const [activeHeroImageIndex, setActiveHeroImageIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    setActiveHeroImageIndex(0);
+  }, [heroImages]);
+
+  React.useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveHeroImageIndex((prev) => (prev + 1) % heroImages.length);
+    }, 6500);
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
+
   if (!homeContent) return null;
   const browseCategoriesFromContent = homeContent.browseCategory?.categories;
   const browseCategories =
@@ -221,16 +247,27 @@ export default function HomePageClient({
           variants={fadeIn}
           className="relative h-[65vh] md:h-[85vh] min-h-[600px] flex items-center justify-center"
         >
-          {homeContent.hero?.imageUrl ? (
-            <Image
-              src={homeContent.hero.imageUrl}
-              alt={homeContent.hero.imageAlt || ""}
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
-              data-ai-hint="Egypt travel"
-            />
+          {heroImages.length > 0 ? (
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={heroImages[activeHeroImageIndex]}
+                className="absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.0, ease: "easeOut" }}
+              >
+                <Image
+                  src={heroImages[activeHeroImageIndex]}
+                  alt={homeContent.hero.imageAlt || ""}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                  priority
+                  data-ai-hint="Egypt travel"
+                />
+              </motion.div>
+            </AnimatePresence>
           ) : (
             <div className="absolute inset-0 bg-muted" />
           )}

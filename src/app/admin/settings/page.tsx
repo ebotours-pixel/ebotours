@@ -40,7 +40,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   getAgencySettings,
   updateAgencySettings,
@@ -50,6 +58,8 @@ import {
   PageSeoSettings,
   SiteSeoSettings,
 } from "@/lib/supabase/agency-content";
+import { useToast } from "@/hooks/use-toast";
+import { generateSeoAssistAction, type SeoAssistResult } from "@/app/actions";
 
 const formSchema = z
   .object({
@@ -58,6 +68,7 @@ const formSchema = z
     contactEmail: z.string().email("Invalid email address."),
     address: z.string().min(1, "Address is required."),
     logo: z.array(z.any()).optional(),
+    favicon: z.array(z.any()).optional(),
     tagline: z.string().optional(),
     navLinks: z
       .array(
@@ -182,6 +193,7 @@ const formSchema = z
 export default function SettingsPage() {
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const [loadedSettingsData, setLoadedSettingsData] = useState<AgencySettingsData | null>(null);
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -190,6 +202,7 @@ export default function SettingsPage() {
       contactEmail: "",
       address: "",
       logo: [],
+      favicon: [],
       tagline: "",
       navLinks: [
         { label: "Home", href: "/" },
@@ -269,6 +282,7 @@ export default function SettingsPage() {
           contactEmail: settingsData.contactEmail ?? "",
           address: settingsData.address ?? "",
           logo: [],
+          favicon: data.favicon_url ? [data.favicon_url] : [],
           tagline: settingsData.tagline ?? "",
           navLinks: settingsData.navLinks ?? [
             { label: "Home", href: "/" },
@@ -373,6 +387,138 @@ export default function SettingsPage() {
     };
   };
 
+  type SeoScope =
+    | "site"
+    | "home"
+    | "about"
+    | "contact"
+    | "tours"
+    | "services"
+    | "destination"
+    | "tailorMade"
+    | "blog";
+  type AiFieldKey = "title" | "description" | "keywords";
+  type AiTarget =
+    | { kind: "single"; scope: SeoScope; fieldPath: string; fieldKey: AiFieldKey }
+    | {
+        kind: "group";
+        scope: SeoScope;
+        titlePath: string;
+        descriptionPath: string;
+        keywordsPath: string;
+      };
+
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTarget, setAiTarget] = useState<AiTarget | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiResult, setAiResult] = useState<SeoAssistResult | null>(null);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const handleAiOpenChange = (open: boolean) => {
+    setAiOpen(open);
+    if (!open) {
+      setAiTarget(null);
+      setAiPrompt("");
+      setAiResult(null);
+    }
+  };
+
+  const openAiForSingle = (target: Omit<Extract<AiTarget, { kind: "single" }>, "kind">) => {
+    setAiTarget({ kind: "single", ...target });
+    setAiPrompt("");
+    setAiResult(null);
+    setAiOpen(true);
+  };
+
+  const openAiForGroup = (target: Omit<Extract<AiTarget, { kind: "group" }>, "kind">) => {
+    setAiTarget({ kind: "group", ...target });
+    setAiPrompt("");
+    setAiResult(null);
+    setAiOpen(true);
+  };
+
+  const applyAiResult = () => {
+    if (!aiTarget || !aiResult) return;
+
+    const opts = { shouldDirty: true, shouldValidate: true } as const;
+    const setStringValue = (path: string, value: string) => {
+      form.setValue(path as never, value as never, opts);
+    };
+    if (aiTarget.kind === "single") {
+      const value =
+        aiTarget.fieldKey === "title"
+          ? aiResult.title
+          : aiTarget.fieldKey === "description"
+            ? aiResult.description
+            : aiResult.keywords;
+      setStringValue(aiTarget.fieldPath, value);
+      setAiOpen(false);
+      return;
+    }
+
+    setStringValue(aiTarget.titlePath, aiResult.title);
+    setStringValue(aiTarget.descriptionPath, aiResult.description);
+    setStringValue(aiTarget.keywordsPath, aiResult.keywords);
+    setAiOpen(false);
+  };
+
+  const generateAiResult = async () => {
+    if (!aiTarget) return;
+    const prompt = aiPrompt.trim();
+    if (!prompt) return;
+
+    setIsAiGenerating(true);
+    try {
+      const agencyName = form.getValues("agencyName");
+      const siteName = form.getValues("seo.site.siteName" as never) as unknown as string | undefined;
+
+      const existingTitle =
+        aiTarget.kind === "single"
+          ? (form.getValues(aiTarget.fieldPath as never) as unknown as string | undefined)
+          : (form.getValues(aiTarget.titlePath as never) as unknown as string | undefined);
+      const existingDescription =
+        aiTarget.kind === "single" && aiTarget.fieldKey !== "description"
+          ? undefined
+          : aiTarget.kind === "single"
+            ? (form.getValues(aiTarget.fieldPath as never) as unknown as string | undefined)
+            : (form.getValues(aiTarget.descriptionPath as never) as unknown as string | undefined);
+      const existingKeywords =
+        aiTarget.kind === "single" && aiTarget.fieldKey !== "keywords"
+          ? undefined
+          : aiTarget.kind === "single"
+            ? (form.getValues(aiTarget.fieldPath as never) as unknown as string | undefined)
+            : (form.getValues(aiTarget.keywordsPath as never) as unknown as string | undefined);
+
+      const result = await generateSeoAssistAction({
+        prompt,
+        scope: aiTarget.scope,
+        agencyName: typeof agencyName === "string" ? agencyName : undefined,
+        siteName: typeof siteName === "string" ? siteName : undefined,
+        existingTitle: typeof existingTitle === "string" ? existingTitle : undefined,
+        existingDescription: typeof existingDescription === "string" ? existingDescription : undefined,
+        existingKeywords: typeof existingKeywords === "string" ? existingKeywords : undefined,
+      });
+
+      if (!result.success || !result.data) {
+        toast({
+          title: "AI generation failed",
+          description: result.message ?? "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setAiResult(result.data);
+    } catch (error) {
+      toast({
+        title: "AI generation failed",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const supabase = createClient();
 
@@ -398,6 +544,39 @@ export default function SettingsPage() {
       }
     } catch {
       // ignore upload failure
+    }
+
+    let faviconUrl: string | null = null;
+    const faviconInputUrl =
+      typeof values.seo?.site?.faviconUrl === "string" ? values.seo.site.faviconUrl.trim() : "";
+    if (faviconInputUrl) {
+      faviconUrl = faviconInputUrl;
+    } else {
+      const first = values.favicon?.[0];
+      if (typeof first === "string" && first.trim()) {
+        faviconUrl = first.trim();
+      }
+    }
+
+    try {
+      const faviconFile = values.favicon?.[0];
+      if (faviconFile && faviconFile instanceof File) {
+        const ext = faviconFile.name.split(".").pop() || "png";
+        const path = `favicons/agency-favicon-${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("cms")
+          .upload(path, faviconFile, {
+            contentType: faviconFile.type || "image/png",
+            upsert: true,
+          });
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("cms")
+            .getPublicUrl(path);
+          faviconUrl = publicUrlData.publicUrl;
+        }
+      }
+    } catch {
     }
 
     const uploadSingleImage = async (
@@ -520,20 +699,96 @@ export default function SettingsPage() {
     };
 
     try {
-      const mergedSettingsData: AgencySettingsData = {
-        ...(loadedSettingsData ?? {}),
-        ...nextSettingsData,
-      };
-
-      await updateAgencySettings(mergedSettingsData, logoUrl);
-      alert("Settings saved!");
+      await updateAgencySettings(nextSettingsData, logoUrl, faviconUrl);
+      toast({
+        title: "Settings saved",
+        description: "Your changes have been applied successfully.",
+      });
     } catch (error) {
-      alert(`Failed to save settings: ${(error as Error).message}`);
+      toast({
+        title: "Failed to save settings",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
     }
   }
 
   return (
     <Form {...form}>
+      <Dialog open={aiOpen} onOpenChange={handleAiOpenChange}>
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle>
+              {aiTarget?.kind === "group"
+                ? "AI Fill SEO"
+                : "AI Suggest Content"}
+            </DialogTitle>
+            <DialogDescription>
+              Describe what you want to write and apply the suggested text.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Describe what you want to write</p>
+              <Textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Example: A luxury Egypt travel agency focused on private tours, Nile cruises, and family-friendly packages."
+                rows={4}
+              />
+            </div>
+
+            {aiResult ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <p className="text-sm font-medium">Title</p>
+                  <Input value={aiResult.title} readOnly />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <p className="text-sm font-medium">Description</p>
+                  <Textarea value={aiResult.description} readOnly rows={3} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <p className="text-sm font-medium">Keywords</p>
+                  <Input value={aiResult.keywords} readOnly />
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAiOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={generateAiResult}
+              disabled={isAiGenerating || !aiTarget || !aiPrompt.trim()}
+            >
+              {isAiGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              onClick={applyAiResult}
+              disabled={isAiGenerating || !aiResult}
+            >
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
           <div>
@@ -1079,7 +1334,26 @@ export default function SettingsPage() {
                     name={"seo.site.defaultTitle" as never}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Default Title</FormLabel>
+                        <div className="flex items-center justify-between gap-2">
+                          <FormLabel>Default Title</FormLabel>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              openAiForSingle({
+                                scope: "site",
+                                fieldPath: "seo.site.defaultTitle",
+                                fieldKey: "title",
+                              })
+                            }
+                            aria-label="Generate default title"
+                            title="Generate with AI"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <FormControl>
                           <Input placeholder="Default browser title" {...field} />
                         </FormControl>
@@ -1107,7 +1381,26 @@ export default function SettingsPage() {
                   name={"seo.site.description" as never}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Site Description</FormLabel>
+                      <div className="flex items-center justify-between gap-2">
+                        <FormLabel>Site Description</FormLabel>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() =>
+                            openAiForSingle({
+                              scope: "site",
+                              fieldPath: "seo.site.description",
+                              fieldKey: "description",
+                            })
+                          }
+                          aria-label="Generate site description"
+                          title="Generate with AI"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <FormControl>
                         <Textarea placeholder="Default meta description" {...field} />
                       </FormControl>
@@ -1121,7 +1414,26 @@ export default function SettingsPage() {
                   name={"seo.site.keywords" as never}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Default Keywords (comma separated)</FormLabel>
+                      <div className="flex items-center justify-between gap-2">
+                        <FormLabel>Default Keywords (comma separated)</FormLabel>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() =>
+                            openAiForSingle({
+                              scope: "site",
+                              fieldPath: "seo.site.keywords",
+                              fieldKey: "keywords",
+                            })
+                          }
+                          aria-label="Generate default keywords"
+                          title="Generate with AI"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <FormControl>
                         <Input placeholder="travel, tours, holidays" {...field} />
                       </FormControl>
@@ -1159,6 +1471,19 @@ export default function SettingsPage() {
                   />
                   <FormField
                     control={form.control}
+                    name={"favicon" as never}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Favicon</FormLabel>
+                        <FormControl>
+                          <ImageUploader value={field.value || []} onChange={field.onChange} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name={"seo.site.faviconUrl" as never}
                     render={({ field }) => (
                       <FormItem>
@@ -1187,13 +1512,50 @@ export default function SettingsPage() {
                   <AccordionItem key={page.key} value={page.key}>
                     <AccordionTrigger>{page.label} Page</AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
+                      <div className="flex items-center justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            openAiForGroup({
+                              scope: page.key as SeoScope,
+                              titlePath: `seo.${page.key}.title`,
+                              descriptionPath: `seo.${page.key}.description`,
+                              keywordsPath: `seo.${page.key}.keywords`,
+                            })
+                          }
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Fill with AI
+                        </Button>
+                      </div>
                       <FormField
                         control={form.control}
                         // @ts-expect-error - dynamic path construction
                         name={`seo.${page.key}.title`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Meta Title</FormLabel>
+                            <div className="flex items-center justify-between gap-2">
+                              <FormLabel>Meta Title</FormLabel>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  openAiForSingle({
+                                    scope: page.key as SeoScope,
+                                    fieldPath: `seo.${page.key}.title`,
+                                    fieldKey: "title",
+                                  })
+                                }
+                                aria-label={`Generate meta title for ${page.label}`}
+                                title="Generate with AI"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                            </div>
                             <FormControl>
                               <Input placeholder={`Title for ${page.label} page`} {...field} />
                             </FormControl>
@@ -1207,7 +1569,26 @@ export default function SettingsPage() {
                         name={`seo.${page.key}.description`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Meta Description</FormLabel>
+                            <div className="flex items-center justify-between gap-2">
+                              <FormLabel>Meta Description</FormLabel>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  openAiForSingle({
+                                    scope: page.key as SeoScope,
+                                    fieldPath: `seo.${page.key}.description`,
+                                    fieldKey: "description",
+                                  })
+                                }
+                                aria-label={`Generate meta description for ${page.label}`}
+                                title="Generate with AI"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                            </div>
                             <FormControl>
                               <Textarea placeholder={`Description for ${page.label} page`} {...field} />
                             </FormControl>
@@ -1221,7 +1602,26 @@ export default function SettingsPage() {
                         name={`seo.${page.key}.keywords`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Keywords (comma separated)</FormLabel>
+                            <div className="flex items-center justify-between gap-2">
+                              <FormLabel>Keywords (comma separated)</FormLabel>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() =>
+                                  openAiForSingle({
+                                    scope: page.key as SeoScope,
+                                    fieldPath: `seo.${page.key}.keywords`,
+                                    fieldKey: "keywords",
+                                  })
+                                }
+                                aria-label={`Generate keywords for ${page.label}`}
+                                title="Generate with AI"
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                            </div>
                             <FormControl>
                               <Input placeholder="travel, egypt, tours" {...field} />
                             </FormControl>

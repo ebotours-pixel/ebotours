@@ -97,6 +97,7 @@ export type TourTaxonomyType = "category" | "destination";
 type AgencySettingsRow = {
   data: AgencySettingsData;
   logo_url: string | null;
+  favicon_url: string | null;
   agency_id: string;
 };
 
@@ -124,7 +125,7 @@ async function getAgencySettingsRow(): Promise<AgencySettingsRow | null> {
 
   const { data, error } = await supabase
     .from("settings")
-    .select("data, logo_url, agency_id")
+    .select("data, logo_url, favicon_url, agency_id")
     .eq("agency_id", agencyId)
     .maybeSingle();
 
@@ -169,21 +170,41 @@ export async function getAgencySettings() {
   ]);
 
   const baseData = (row?.data ?? {}) as AgencySettingsData;
+  const rowFaviconUrl = row?.favicon_url ?? null;
+  const mergedSeoSite: SiteSeoSettings | undefined = rowFaviconUrl
+    ? {
+        ...(baseData.seo?.site ?? {}),
+        faviconUrl: rowFaviconUrl,
+      }
+    : baseData.seo?.site;
+  const mergedSeo: AgencySettingsData["seo"] | undefined =
+    mergedSeoSite || baseData.seo
+      ? {
+          ...(baseData.seo ?? {}),
+          site: mergedSeoSite,
+        }
+      : undefined;
+  const mergedData: AgencySettingsData = {
+    ...baseData,
+    seo: mergedSeo,
+  };
 
   return {
     data: {
-      ...baseData,
+      ...mergedData,
       tourCategories,
       tourDestinations,
     } as AgencySettingsData,
     logo_url: row?.logo_url ?? null,
+    favicon_url: rowFaviconUrl,
     agency_id: row?.agency_id ?? agencyId,
   };
 }
 
 export async function updateAgencySettings(
   settingsData: AgencySettingsData,
-  logoUrl?: string | null
+  logoUrl?: string | null,
+  faviconUrl?: string | null
 ) {
   const supabase = await createClient();
   const agencyId = await getCurrentAgencyId();
@@ -191,15 +212,80 @@ export async function updateAgencySettings(
   // Check if settings row exists for this agency
   const existing = await getAgencySettingsRow();
 
-  const { tourCategories: _tourCategories, tourDestinations: _tourDestinations, ...settingsDataWithoutTaxonomy } =
-    settingsData ?? {};
+  const {
+    tourCategories: _tourCategories,
+    tourDestinations: _tourDestinations,
+    ...settingsDataWithoutTaxonomy
+  } = settingsData ?? {};
 
   const resolvedLogoUrl =
     logoUrl === undefined ? existing?.logo_url ?? null : logoUrl;
+  const existingFaviconUrlFromData =
+    existing?.data?.seo?.site?.faviconUrl &&
+    existing.data.seo.site.faviconUrl.trim()
+      ? existing.data.seo.site.faviconUrl.trim()
+      : null;
+  const resolvedFaviconUrl =
+    faviconUrl === undefined
+      ? existing?.favicon_url ?? existingFaviconUrlFromData
+      : faviconUrl;
+
+  const currentData = (existing?.data ?? {}) as AgencySettingsData;
+
+  const mergedSettingsData: AgencySettingsData = {
+    ...currentData,
+    ...settingsDataWithoutTaxonomy,
+    images: {
+      ...(currentData.images ?? {}),
+      ...(settingsDataWithoutTaxonomy.images ?? {}),
+    },
+    socialMedia: {
+      ...(currentData.socialMedia ?? {}),
+      ...(settingsDataWithoutTaxonomy.socialMedia ?? {}),
+    },
+    paymentMethods: {
+      ...(currentData.paymentMethods ?? {}),
+      ...(settingsDataWithoutTaxonomy.paymentMethods ?? {}),
+    },
+    theme: {
+      ...(currentData.theme ?? {}),
+      ...(settingsDataWithoutTaxonomy.theme ?? {}),
+    },
+    destinationPage: {
+      ...(currentData.destinationPage ?? {}),
+      ...(settingsDataWithoutTaxonomy.destinationPage ?? {}),
+    },
+    seo: {
+      ...(currentData.seo ?? {}),
+      ...(settingsDataWithoutTaxonomy.seo ?? {}),
+      site: {
+        ...(currentData.seo?.site ?? {}),
+        ...(settingsDataWithoutTaxonomy.seo?.site ?? {}),
+      },
+    },
+  };
+
+  if (resolvedFaviconUrl && resolvedFaviconUrl.trim()) {
+    mergedSettingsData.seo = {
+      ...(mergedSettingsData.seo ?? {}),
+      site: {
+        ...(mergedSettingsData.seo?.site ?? {}),
+        faviconUrl: resolvedFaviconUrl.trim(),
+      },
+    };
+  } else if (mergedSettingsData.seo?.site?.faviconUrl) {
+    const nextSite = { ...(mergedSettingsData.seo.site ?? {}) };
+    delete nextSite.faviconUrl;
+    mergedSettingsData.seo = {
+      ...(mergedSettingsData.seo ?? {}),
+      site: nextSite,
+    };
+  }
 
   const payload = {
-    data: settingsDataWithoutTaxonomy,
+    data: mergedSettingsData,
     logo_url: resolvedLogoUrl,
+    favicon_url: resolvedFaviconUrl,
     updated_at: new Date().toISOString(),
     agency_id: agencyId,
   };

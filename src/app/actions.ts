@@ -1,9 +1,12 @@
 "use server";
 
+import { ai } from "@/ai/genkit";
 import { suggestAlternativeTours } from "@/ai/flows/suggest-alternative-tours";
 import { generateBlogPost } from "@/ai/flows/generate-blog-post";
 import { generateTourFlow } from "@/ai/flows/generateTour";
+import { createClient } from "@/lib/supabase/server";
 import { TourInputSchema, TourOutput } from "@/types/tour-schemas";
+import { z as genkitZ } from "genkit";
 import { z } from "zod";
 
 // For AI Suggestions in Cart
@@ -126,6 +129,95 @@ export async function generateTailorMadeTourAction(
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to generate tour",
+    };
+  }
+}
+
+const SeoAssistInputSchema = z.object({
+  prompt: z.string().min(3),
+  scope: z.enum([
+    "site",
+    "home",
+    "about",
+    "contact",
+    "tours",
+    "services",
+    "destination",
+    "tailorMade",
+    "blog",
+  ]),
+  agencyName: z.string().optional(),
+  siteName: z.string().optional(),
+  existingTitle: z.string().optional(),
+  existingDescription: z.string().optional(),
+  existingKeywords: z.string().optional(),
+});
+
+const SeoAssistOutputSchema = genkitZ.object({
+  title: genkitZ.string(),
+  description: genkitZ.string(),
+  keywords: genkitZ.string(),
+});
+
+export type SeoAssistResult = genkitZ.infer<typeof SeoAssistOutputSchema>;
+
+export async function generateSeoAssistAction(input: z.infer<typeof SeoAssistInputSchema>): Promise<{
+  success: boolean;
+  data?: SeoAssistResult;
+  message?: string;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    const validated = SeoAssistInputSchema.safeParse(input);
+    if (!validated.success) {
+      return { success: false, message: validated.error.errors[0]?.message ?? "Invalid input." };
+    }
+
+    const scopeLabel =
+      validated.data.scope === "site"
+        ? "Site Defaults"
+        : `${validated.data.scope} Page`;
+    const prompt = `You are an SEO expert for a travel agency website.
+
+Generate SEO metadata based on the user's request.
+
+Requirements:
+- title: <= 60 characters, clear and compelling.
+- description: <= 160 characters, natural and not stuffed.
+- keywords: comma-separated list, 8 to 12 items, no duplicates.
+
+Context:
+- Scope: ${scopeLabel}
+- Agency Name: ${validated.data.agencyName ?? ""}
+- Site Name: ${validated.data.siteName ?? ""}
+- Existing Title: ${validated.data.existingTitle ?? ""}
+- Existing Description: ${validated.data.existingDescription ?? ""}
+- Existing Keywords: ${validated.data.existingKeywords ?? ""}
+
+User request: ${validated.data.prompt}`;
+
+    const { output } = await ai.generate({
+      prompt,
+      output: { schema: SeoAssistOutputSchema },
+    });
+
+    if (!output) {
+      return { success: false, message: "Failed to generate SEO content." };
+    }
+
+    return { success: true, data: output };
+  } catch (error) {
+    console.error(error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to generate SEO content.",
     };
   }
 }
