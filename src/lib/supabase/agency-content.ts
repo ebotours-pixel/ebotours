@@ -90,6 +90,27 @@ export type AgencySettingsData = {
   destinationPage?: DestinationPageSettings;
   tourDestinations?: string[];
   tourCategories?: string[];
+  modules?: {
+    tours?: boolean;
+    hotels?: boolean;
+    blog?: boolean;
+  };
+  singleHotelMode?: boolean;
+  hotelSearchConfig?: {
+    maxAdults?: number;
+    maxChildren?: number;
+    maxRooms?: number;
+  };
+  emailSettings?: {
+    /** Agency's own Resend API key — falls back to RESEND_API_KEY env if not set */
+    resendApiKey?: string;
+    /** Display name for the "from" field, e.g. "Tix & Trips Egypt" */
+    fromName?: string;
+    /** Sender email address, must be verified in Resend */
+    fromEmail?: string;
+    /** Whether to send admin notification emails on new bookings */
+    notifyAdminOnBooking?: boolean;
+  };
 };
 
 export type TourTaxonomyType = "category" | "destination";

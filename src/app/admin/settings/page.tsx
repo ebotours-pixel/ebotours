@@ -141,6 +141,20 @@ const formSchema = z
     currentPassword: z.string().optional(),
     newPassword: z.string().optional(),
     confirmPassword: z.string().optional(),
+    modules: z
+      .object({
+        tours: z.boolean().default(true),
+        hotels: z.boolean().default(true),
+        blog: z.boolean().default(true),
+      })
+      .default({ tours: true, hotels: true, blog: true }),
+    singleHotelMode: z.boolean().default(false),
+    emailSettings: z.object({
+      resendApiKey: z.string().optional(),
+      fromName: z.string().optional(),
+      fromEmail: z.string().optional(),
+      notifyAdminOnBooking: z.boolean().default(true),
+    }).optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.paymentMethods.cash && !data.paymentMethods.online) {
@@ -244,6 +258,18 @@ export default function SettingsPage() {
         fontFamily: "Inter",
       },
       seo: {},
+      modules: {
+        tours: true,
+        hotels: true,
+        blog: true,
+      },
+      singleHotelMode: false,
+      emailSettings: {
+        resendApiKey: "",
+        fromName: "",
+        fromEmail: "",
+        notifyAdminOnBooking: true,
+      },
     },
   });
 
@@ -337,6 +363,18 @@ export default function SettingsPage() {
             fontFamily: settingsData.theme?.fontFamily ?? "Inter",
           },
           seo: settingsData.seo ?? {},
+          modules: settingsData.modules ?? {
+            tours: true,
+            hotels: true,
+            blog: true,
+          },
+          singleHotelMode: settingsData.singleHotelMode ?? false,
+          emailSettings: {
+            resendApiKey: settingsData.emailSettings?.resendApiKey ?? "",
+            fromName: settingsData.emailSettings?.fromName ?? "",
+            fromEmail: settingsData.emailSettings?.fromEmail ?? "",
+            notifyAdminOnBooking: settingsData.emailSettings?.notifyAdminOnBooking ?? true,
+          },
         });
       }
     }
@@ -696,6 +734,16 @@ export default function SettingsPage() {
       paymentMethods: values.paymentMethods,
       theme: values.theme,
       seo: mergeSeo(loadedSettingsData?.seo, values.seo),
+      modules: values.modules,
+      singleHotelMode: values.singleHotelMode,
+      emailSettings: values.emailSettings
+        ? {
+            resendApiKey: values.emailSettings.resendApiKey?.trim() || undefined,
+            fromName: values.emailSettings.fromName?.trim() || undefined,
+            fromEmail: values.emailSettings.fromEmail?.trim() || undefined,
+            notifyAdminOnBooking: values.emailSettings.notifyAdminOnBooking ?? true,
+          }
+        : undefined,
     };
 
     try {
@@ -797,6 +845,196 @@ export default function SettingsPage() {
               Manage your site settings, branding, and security.
             </p>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Configuration</CardTitle>
+              <CardDescription>
+                Configure the features and mode of your website.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Enable Tours</FormLabel>
+                  <FormDescription>
+                    Enable tour management, listings, and bookings.
+                  </FormDescription>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="modules.tours"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Enable Hotels</FormLabel>
+                  <FormDescription>
+                    Enable hotel management, room listings, and bookings.
+                  </FormDescription>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="modules.hotels"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Single Hotel Mode</FormLabel>
+                  <FormDescription>
+                    Enable if this website represents a single hotel property.
+                    Disabling this creates a directory/OTA style site.
+                  </FormDescription>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="singleHotelMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Enable Blog</FormLabel>
+                  <FormDescription>
+                    Enable blog posts and news section.
+                  </FormDescription>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="modules.blog"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Email Notifications ── */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Email Notifications</CardTitle>
+              <CardDescription>
+                Configure Resend to automatically send booking confirmations to customers and alerts to your team.
+                Get your free API key at{" "}
+                <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-4">
+                  resend.com
+                </a>
+                . Leave blank to disable emails.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="emailSettings.fromName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tix & Trips Egypt" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <FormDescription>Displayed in the &quot;From&quot; field of every email.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailSettings.fromEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="bookings@yourdomain.com" {...field} value={field.value ?? ""} />
+                      </FormControl>
+                      <FormDescription>Must be a verified domain in your Resend account.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="emailSettings.resendApiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Resend API Key</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxx"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Your secret API key from the Resend dashboard. Stored securely — never exposed to the public.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Admin Booking Alerts</FormLabel>
+                  <FormDescription>
+                    Send an email to your Contact Email whenever a new booking is created.
+                  </FormDescription>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="emailSettings.notifyAdminOnBooking"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? true}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

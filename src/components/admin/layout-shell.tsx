@@ -11,10 +11,12 @@ export function AdminLayoutShell({
   user,
   children,
   settings,
+  pendingBookingsCount,
 }: {
   user: User;
   children: React.ReactNode;
   settings?: AgencySettings;
+  pendingBookingsCount?: number;
 }) {
   const supabase = createClient();
 
@@ -24,7 +26,7 @@ export function AdminLayoutShell({
   };
 
   return (
-    <AdminSidebar user={user} handleSignOut={handleSignOut} settings={settings}>
+    <AdminSidebar user={user} handleSignOut={handleSignOut} settings={settings} pendingBookingsCount={pendingBookingsCount}>
       {children}
     </AdminSidebar>
   );

@@ -10,9 +10,10 @@ import Image from "next/image";
 interface ImageUploaderProps {
   value: (File | string)[];
   onChange: (files: (File | string)[]) => void;
+  maxFiles?: number;
 }
 
-export function ImageUploader({ value, onChange }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>([]);
 
   useEffect(() => {
@@ -36,15 +37,27 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const newFiles = [...(value || []), ...acceptedFiles];
-      onChange(newFiles);
+      const currentFiles = value || [];
+      const newFiles = [...currentFiles, ...acceptedFiles];
+      
+      // Enforce maxFiles limit if provided
+      const finalFiles = maxFiles ? newFiles.slice(0, maxFiles) : newFiles;
+      
+      onChange(finalFiles);
 
       const newPreviews = acceptedFiles.map((file) =>
         URL.createObjectURL(file),
       );
-      setPreviews((prev) => [...prev, ...newPreviews]);
+      
+      // Update previews based on the limited files
+      // This is a bit tricky because we're mixing old previews with new ones
+      // and we need to make sure we're keeping the right ones if we truncated
+      setPreviews((prev) => {
+        const allPreviews = [...prev, ...newPreviews];
+        return maxFiles ? allPreviews.slice(0, maxFiles) : allPreviews;
+      });
     },
-    [value, onChange],
+    [value, onChange, maxFiles],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -56,6 +69,7 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
       "image/webp": [],
     },
     multiple: true,
+    maxFiles: maxFiles,
   });
 
   const handleRemove = (indexToRemove: number) => {

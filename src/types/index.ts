@@ -1,4 +1,21 @@
 export * from "./agency";
+export * from "./hotel";
+
+export type Review = {
+  id: string;
+  agencyId: string;
+  tourId?: string | null;
+  hotelId?: string | null;
+  customerName: string;
+  customerEmail: string;
+  rating: number;
+  content: string | null;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  // Joined relations (from admin queries)
+  tours?: { name: string; slug: string } | null;
+  hotels?: { name: string; slug: string } | null;
+};
 
 export type PriceTier = {
   minPeople: number;
@@ -64,6 +81,16 @@ export type UpsellItem = {
   relatedTourId?: string | null; // uuid
   imageUrl?: string; // New: URL for the upsell item image
   isActive: boolean;
+  createdAt: string;
+};
+
+export type TourDateAvailability = {
+  id: string;
+  agencyId: string;
+  tourId: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  availableSpots: number | null; // null = unlimited
+  isBlocked: boolean;
   createdAt: string;
 };
 
@@ -176,8 +203,17 @@ export type HeroSection = {
   imageUrl?: string;
   imageUrls?: string[];
   imageAlt?: string;
+  videoUrl?: string; // H2.1 — looping background video URL
   title: string;
   subtitle: string;
+  searchType?: "tours" | "hotels";
+  bookDirectBadge?: string;
+};
+
+export type RoomsSectionContent = {
+  title?: string;
+  subtitle?: string;
+  count?: number;
 };
 
 export type Feature = {
@@ -245,6 +281,74 @@ export type NewsSection = {
   count?: number;
 };
 
+export type HotelFeature = {
+  icon: string;
+  title: string;
+  description: string;
+};
+
+export type HotelFeaturesSection = {
+  title: string;
+  subtitle: string;
+  features: HotelFeature[];
+};
+
+export type FeaturedRoomsSection = {
+  title: string;
+  subtitle: string;
+  roomIds: string[];
+};
+
+export type HotelStorySection = {
+  title: string;
+  description: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  buttonText?: string;
+  buttonLink?: string;
+};
+
+export type AmenitiesSectionContent = {
+  title?: string;
+  subtitle?: string;
+  items?: string[]; // array of amenity IDs, e.g. ["wifi", "pool", "spa"]
+};
+
+export type GallerySectionContent = {
+  title?: string;
+  subtitle?: string;
+  images?: string[];
+};
+
+export type WhyBookDirectBenefit = {
+  icon?: string; // lucide icon name
+  title: string;
+  description: string;
+};
+
+export type WhyBookDirectSection = {
+  title?: string;
+  subtitle?: string;
+  benefits?: WhyBookDirectBenefit[];
+};
+
+export type LocationSectionContent = {
+  title?: string;
+  subtitle?: string;
+  address?: string;
+  mapEmbedUrl?: string;
+  directionsUrl?: string;
+};
+
+export type SocialSectionContent = {
+  title?: string;
+  subtitle?: string;
+  handle?: string;         // e.g. "@myhotel"
+  profileUrl?: string;     // link to profile
+  platform?: string;       // e.g. "Instagram", "TikTok"
+  images?: string[];       // up to 9 uploaded photos
+};
+
 export type HomeContent = {
   testimonials?: Testimonial[];
   testimonialCount?: number;
@@ -256,6 +360,16 @@ export type HomeContent = {
   lastMinuteOffers: LastMinuteOffersSection;
   videoSection: VideoSection;
   newsSection: NewsSection;
+  // Hotel Specific Sections
+  hotelFeatures?: HotelFeaturesSection;
+  featuredRooms?: FeaturedRoomsSection;
+  hotelStory?: HotelStorySection;
+  roomsSection?: RoomsSectionContent;
+  amenitiesSection?: AmenitiesSectionContent;
+  gallerySection?: GallerySectionContent;
+  whyBookDirect?: WhyBookDirectSection;
+  locationSection?: LocationSectionContent;
+  socialSection?: SocialSectionContent;
   visibility?: {
     hero?: boolean;
     browseCategory?: boolean;
@@ -266,6 +380,16 @@ export type HomeContent = {
     testimonials?: boolean;
     videoSection?: boolean;
     newsSection?: boolean;
+    // Hotel visibility
+    hotelFeatures?: boolean;
+    featuredRooms?: boolean;
+    hotelStory?: boolean;
+    roomsSection?: boolean;
+    amenitiesSection?: boolean;
+    gallerySection?: boolean;
+    whyBookDirect?: boolean;
+    locationSection?: boolean;
+    socialSection?: boolean;
   };
 };
 

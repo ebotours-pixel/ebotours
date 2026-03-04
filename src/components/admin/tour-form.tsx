@@ -37,7 +37,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, PlusCircle, Trash2, Map, Calendar, DollarSign, Image as ImageIcon, Settings, List, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, PlusCircle, Trash2, Map, Calendar, CalendarCheck, DollarSign, Image as ImageIcon, Settings, List, AlertCircle } from "lucide-react";
+import { TourAvailabilityManager } from "@/components/admin/tour-availability-manager";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { Combobox } from "@/components/ui/combobox";
 import type { Tour } from "@/types";
@@ -518,7 +519,7 @@ export function TourForm({ initialData, onSubmit, formType, categories = [], des
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 h-auto">
               <TabsTrigger value="overview" className="flex gap-2 relative">
                 <Map className="h-4 w-4" /> Overview
                 {getTabHasError("overview") && <AlertCircle className="h-3 w-3 text-destructive absolute top-1 right-1" />}
@@ -543,6 +544,11 @@ export function TourForm({ initialData, onSubmit, formType, categories = [], des
                 <Settings className="h-4 w-4" /> Settings
                 {getTabHasError("settings") && <AlertCircle className="h-3 w-3 text-destructive absolute top-1 right-1" />}
               </TabsTrigger>
+              {formType === "edit" && initialData?.id && (
+                <TabsTrigger value="availability" className="flex gap-2 relative">
+                  <CalendarCheck className="h-4 w-4" /> Availability
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <div className="mt-6">
@@ -955,6 +961,23 @@ export function TourForm({ initialData, onSubmit, formType, categories = [], des
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* AVAILABILITY TAB (edit mode only) */}
+              {formType === "edit" && initialData?.id && (
+                <TabsContent value="availability">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Date Availability</CardTitle>
+                      <CardDescription>
+                        Block specific dates or set capacity limits. Dates without rules have unlimited availability.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <TourAvailabilityManager tourId={initialData.id} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
 
               {/* SETTINGS TAB */}
               <TabsContent value="settings">

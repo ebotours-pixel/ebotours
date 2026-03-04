@@ -19,6 +19,7 @@ import {
   Tag,
   Phone,
   Globe,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -131,9 +132,15 @@ export default async function BookingDetailsPage({
             <CardDescription>
               This booking includes {booking.bookingItems.length} tour(s).
             </CardDescription>
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t space-y-3">
               <p className="mb-2 text-sm font-medium text-muted-foreground">Actions</p>
               <BookingStatusActions bookingId={booking.id} currentStatus={booking.status} />
+              <Button variant="outline" className="w-full" asChild>
+                <a href={`/api/bookings/${booking.id}/voucher`} download>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Voucher
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>

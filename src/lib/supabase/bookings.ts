@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { toCamelCase } from "@/lib/utils";
 import { getCurrentAgencyId } from "@/lib/supabase/agencies";
 import { validatePromoCode } from "@/lib/supabase/promo-codes";
+import { checkTourDateAvailability, decrementAvailableSpots } from "@/lib/supabase/tour-availability";
+import { sendEmail } from "@/lib/email";
+import { renderBookingConfirmationEmail } from "@/lib/email/templates/booking-confirmation";
+import { renderBookingNotificationEmail } from "@/lib/email/templates/booking-notification";
+import { renderBookingStatusChangeEmail } from "@/lib/email/templates/booking-status-change";
+import { getAgencySettings } from "@/lib/supabase/agency-content";
 
 export async function getBookings(): Promise<Booking[]> {
   const supabase = await createClient();
@@ -64,6 +70,45 @@ export async function updateBookingStatus(
 
   revalidatePath("/admin/bookings");
   revalidatePath(`/admin/bookings/${bookingId}`);
+
+  // Send status change email for notable status changes (non-blocking)
+  if (status === "Confirmed" || status === "Cancelled") {
+    try {
+      const [booking, settings] = await Promise.all([
+        getBookingById(bookingId),
+        getAgencySettings().catch(() => null),
+      ]);
+
+      if (booking?.customerEmail) {
+        const agencyData = settings?.data;
+        await sendEmail({
+          agencyEmailSettings: agencyData?.emailSettings,
+          to: booking.customerEmail,
+          subject: `Booking ${status} — ${agencyData?.agencyName || "Your Travel Agency"}`,
+          html: renderBookingStatusChangeEmail({
+            agencyName: agencyData?.agencyName || "Your Travel Agency",
+            agencyLogoUrl: settings?.logo_url || undefined,
+            agencyEmail: agencyData?.contactEmail,
+            agencyPhone: agencyData?.phoneNumber,
+            bookingId,
+            customerName: booking.customerName,
+            newStatus: status,
+            totalPrice: booking.totalPrice,
+            items: (booking.bookingItems || []).map((bi) => ({
+              name: bi.tours?.name ?? bi.upsellItems?.name ?? "Item",
+              packageName: bi.packageName,
+              adults: bi.adults,
+              children: bi.children,
+              date: bi.itemDate,
+            })),
+          }),
+        });
+      }
+    } catch (emailErr) {
+      console.error("Error sending status change email:", emailErr);
+      // Non-blocking: don’t fail the status update if email fails
+    }
+  }
 }
 
 export async function deleteBooking(bookingId: string) {
@@ -189,6 +234,23 @@ export async function createBooking(data: CreateBookingData) {
 
   const finalTotal = subtotal - discountAmount;
 
+  // 2b. Validate tour date availability
+  for (const item of data.cartItems) {
+    if (item.productType === "tour" && item.date) {
+      const tour = item.product as Tour;
+      const itemDate = item.date instanceof Date ? item.date : new Date(item.date as string);
+      const dateStr = itemDate.toISOString().split("T")[0];
+      const requiredSpots = (item.adults ?? 0) + (item.children ?? 0);
+
+      const check = await checkTourDateAvailability(tour.id, dateStr, requiredSpots);
+      if (!check.available) {
+        throw new Error(
+          check.reason || `Tour "${tour.name}" is not available on ${dateStr}.`
+        );
+      }
+    }
+  }
+
   // 3. Insert into bookings table
   const status = data.paymentMethod === "cash" ? "Confirmed" : "Pending";
   const insertPayload = {
@@ -250,6 +312,22 @@ export async function createBooking(data: CreateBookingData) {
   if (itemsError) {
     console.error("Error creating booking items:", itemsError);
     throw new Error("Failed to create booking items.");
+  }
+
+  // 4b. Decrement available spots for tour dates
+  for (const item of data.cartItems) {
+    if (item.productType === "tour" && item.date) {
+      const tour = item.product as Tour;
+      const itemDate2 = item.date instanceof Date ? item.date : new Date(item.date as string);
+      const dateStr = itemDate2.toISOString().split("T")[0];
+      const count = (item.adults ?? 0) + (item.children ?? 0);
+      try {
+        await decrementAvailableSpots(tour.id, dateStr, count);
+      } catch (err) {
+        console.error("Error decrementing spots:", err);
+        // Non-blocking — booking already created
+      }
+    }
   }
 
   // 5. Update promo usage count
@@ -325,5 +403,73 @@ export async function createBooking(data: CreateBookingData) {
 
   revalidatePath("/admin/bookings");
   revalidatePath("/admin/customers");
+
+  // 7. Send email notifications (non-blocking)
+  try {
+    const settings = await getAgencySettings().catch(() => null);
+    const agencyData = settings?.data;
+    const emailSettings = agencyData?.emailSettings;
+    const notifyAdmin = emailSettings?.notifyAdminOnBooking !== false; // default: true
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://localhost:3000";
+
+    const emailItems = data.cartItems.map((item, idx) => ({
+      name: item.product.name,
+      packageName: item.packageName,
+      adults: item.productType === "tour" ? (item.adults ?? 0) : undefined,
+      children: item.productType === "tour" ? (item.children ?? 0) : undefined,
+      date: item.date ? item.date.toISOString() : undefined,
+      price: bookingItemsToInsert[idx]?.price ?? 0,
+    }));
+
+    const sharedOpts = { agencyEmailSettings: emailSettings };
+
+    // 7a. Customer confirmation
+    await sendEmail({
+      ...sharedOpts,
+      to: data.customerEmail,
+      subject: `Booking Received — ${agencyData?.agencyName || "Your Travel Agency"}`,
+      html: renderBookingConfirmationEmail({
+        agencyName: agencyData?.agencyName || "Your Travel Agency",
+        agencyLogoUrl: settings?.logo_url || undefined,
+        agencyEmail: agencyData?.contactEmail,
+        agencyPhone: agencyData?.phoneNumber,
+        bookingId,
+        customerName: data.customerName,
+        paymentMethod: data.paymentMethod,
+        status,
+        items: emailItems,
+        subtotal,
+        discountAmount,
+        totalPrice: finalTotal,
+      }),
+    });
+
+    // 7b. Admin notification
+    if (notifyAdmin && agencyData?.contactEmail) {
+      await sendEmail({
+        ...sharedOpts,
+        to: agencyData.contactEmail,
+        fromName: "Booking Alert",
+        subject: `New Booking #${bookingId.substring(0, 8).toUpperCase()} — ${data.customerName}`,
+        html: renderBookingNotificationEmail({
+          agencyName: agencyData?.agencyName || "Your Travel Agency",
+          bookingId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.phoneNumber,
+          customerNationality: data.nationality,
+          paymentMethod: data.paymentMethod,
+          items: emailItems,
+          totalPrice: finalTotal,
+          discountAmount,
+          adminBookingUrl: `${appUrl}/admin/bookings/${bookingId}`,
+        }),
+      });
+    }
+  } catch (emailErr) {
+    console.error("Error sending booking emails:", emailErr);
+    // Non-blocking: booking succeeds even if emails fail
+  }
+
   return bookingId as string;
 }

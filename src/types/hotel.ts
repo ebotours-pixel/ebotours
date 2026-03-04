@@ -1,0 +1,96 @@
+export type Hotel = {
+  id: string;
+  agencyId: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  website?: string | null;
+  timezone?: string | null;
+  starRating?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  policies: Record<string, unknown>;
+  images: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RoomType = {
+  id: string;
+  hotelId: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  maxAdults: number;
+  maxChildren: number;
+  beds: Record<string, unknown>;
+  amenities: string[];
+  services: string[];
+  highlights: string[];
+  sizeSqm?: number | null;
+  view?: string | null;
+  bathrooms?: number | null;
+  floor?: number | null;
+  basePricePerNight?: number | null;
+  currency?: string | null;
+  defaultUnits?: number | null;
+  smokingAllowed: boolean;
+  refundable: boolean;
+  breakfastIncluded: boolean;
+  petsAllowed: boolean;
+  extraBedAllowed: boolean;
+  extraBedFee?: number | null;
+  cancellationPolicy?: string | null;
+  accessibility: Record<string, unknown>;
+  images: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RoomInventory = {
+  id: string;
+  roomTypeId: string;
+  date: string;
+  availableUnits: number;
+  pricePerNight: number;
+  currency?: string | null;
+  minNights?: number | null;
+  stopSell: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HotelBookingStatus = "pending" | "paid" | "confirmed" | "cancelled";
+
+export type HotelBooking = {
+  id: string;
+  agencyId: string;
+  hotelId: string;
+  roomTypeId: string;
+  checkIn: string;
+  checkOut: string;
+  units: number;
+  guestsAdults: number;
+  guestsChildren: number;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  status: HotelBookingStatus;
+  paymentProvider?: string | null;
+  paymentReference?: string | null;
+  subtotal: number;
+  tax: number;
+  fees: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+};

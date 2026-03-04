@@ -82,12 +82,12 @@ export function Footer() {
                 {tagline ? <p className="text-xs text-gray-400">{tagline}</p> : null}
               </div>
             </Link>
-            <h3 className="font-headline font-semibold text-white">Subscribe Newsletter</h3>
-            <p className="text-sm">Get Our Latest Deals and Update</p>
+            <h3 className="font-headline font-semibold text-white">{t("footer.subscribeNewsletter")}</h3>
+            <p className="text-sm">{t("footer.subscribeDesc")}</p>
             <form className="space-y-3">
-              <Input type="email" placeholder="Your Email Address" className="bg-white text-gray-900 border-0 rounded-lg" />
+              <Input type="email" placeholder={t("footer.emailPlaceholder")} className="bg-white text-gray-900 border-0 rounded-lg" />
               <Button type="submit" className="w-full rounded-lg">
-                Subscribe <ArrowRight className="ml-2 h-4 w-4" />
+                {t("footer.subscribeBtn")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
             <div className="flex space-x-3 pt-2">
@@ -116,7 +116,7 @@ export function Footer() {
 
           {/* Column 2: Quick Links (from settings if available) */}
           <div>
-            <h3 className="font-headline font-semibold text-white mb-6 relative after:content-[''] after:absolute after:left-0 after:-bottom-2 after:w-10 after:h-0.5 after:bg-primary">Quick Links</h3>
+            <h3 className="font-headline font-semibold text-white mb-6 relative after:content-[''] after:absolute after:left-0 after:-bottom-2 after:w-10 after:h-0.5 after:bg-primary">{t("footer.quickLinks")}</h3>
             <ul className="space-y-3">
               {settings?.data?.navLinks && settings.data.navLinks.length > 0 ? (
                 settings.data.navLinks.slice(0, 6).map((l) => (
@@ -140,10 +140,10 @@ export function Footer() {
           <div>
             <h3 className="font-headline font-semibold text-white mb-6 relative after:content-[''] after:absolute after:left-0 after:-bottom-2 after:w-10 after:h-0.5 after:bg-primary">{t("footer.services")}</h3>
             <p className="text-sm text-gray-400 mb-4">
-              Explore what we can arrange for your trip.
+              {t("footer.exploreServices")}
             </p>
             <Link href="/services" className="inline-flex items-center gap-2 hover:text-primary transition-colors">
-              View services <ArrowRight className="h-4 w-4" />
+              {t("footer.viewServices")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -185,9 +185,9 @@ export function Footer() {
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center text-sm">
           <p>&copy; {new Date().getFullYear()} {agencyName}. {t("footer.rights")}</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-primary">Terms of use</a>
-            <a href="#" className="hover:text-primary">Privacy Policy</a>
-            <a href="#" className="hover:text-primary">Environmental Policy</a>
+            <a href="#" className="hover:text-primary">{t("footer.terms")}</a>
+            <a href="#" className="hover:text-primary">{t("footer.privacy")}</a>
+            <a href="#" className="hover:text-primary">{t("footer.environmental")}</a>
           </div>
         </div>
       </div>

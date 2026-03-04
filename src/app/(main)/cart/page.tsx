@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useFormStatus } from "react-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useCurrency } from "@/hooks/use-currency";
+import { useLanguage } from "@/hooks/use-language";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ import {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useLanguage();
   return (
     <Button type="submit" disabled={pending}>
       {pending ? (
@@ -46,7 +48,7 @@ function SubmitButton() {
       ) : (
         <Lightbulb className="mr-2 h-4 w-4" />
       )}
-      Get AI Suggestions
+      {t("cart.aiSuggestions")}
     </Button>
   );
 }
@@ -65,6 +67,7 @@ export default function CartPage() {
     promoCode
   } = useCart();
   const { format: formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const [state, formAction] = useActionState(getAiSuggestions, {
     message: "",
     suggestions: [],
@@ -172,37 +175,37 @@ export default function CartPage() {
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="space-y-3">
               <Badge variant="secondary" className="w-fit">
-                Cart
+                {t("cart.badge")}
               </Badge>
               <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-                Review your trip
+                {t("cart.title")}
               </h1>
               <p className="max-w-2xl text-base text-muted-foreground md:text-lg">
-                Confirm dates, guests, and add-ons before checkout.
+                {t("cart.subtitle")}
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" variant="outline">
-                <Link href="/tours">Continue Shopping</Link>
+                <Link href="/tours">{t("cart.continueShopping")}</Link>
               </Button>
               <Button asChild size="lg">
-                <Link href="/checkout">Checkout</Link>
+                <Link href="/checkout">{t("cart.checkoutBtn")}</Link>
               </Button>
             </div>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 1</p>
-              <p className="text-sm text-muted-foreground">Cart</p>
+              <p className="text-sm font-medium">{t("cart.step1")}</p>
+              <p className="text-sm text-muted-foreground">{t("cart.stateCart")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 2</p>
-              <p className="text-sm text-muted-foreground">Checkout</p>
+              <p className="text-sm font-medium">{t("cart.step2")}</p>
+              <p className="text-sm text-muted-foreground">{t("cart.stateCheckout")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 3</p>
-              <p className="text-sm text-muted-foreground">Confirmation</p>
+              <p className="text-sm font-medium">{t("cart.step3")}</p>
+              <p className="text-sm text-muted-foreground">{t("cart.stateConfirmation")}</p>
             </div>
           </div>
         </div>
@@ -216,17 +219,17 @@ export default function CartPage() {
                 <ShoppingCart className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold tracking-tight">Your cart is empty</h2>
+                <h2 className="text-2xl font-semibold tracking-tight">{t("cart.empty")}</h2>
                 <p className="text-muted-foreground">
-                  Start by exploring tours, then come back here to checkout.
+                  {t("cart.emptyDesc")}
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg">
-                  <Link href="/tours">Explore Tours</Link>
+                  <Link href="/tours">{t("cart.exploreTours")}</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/destination">Browse Destinations</Link>
+                  <Link href="/destination">{t("cart.browseDestinations")}</Link>
                 </Button>
               </div>
             </div>
@@ -236,9 +239,9 @@ export default function CartPage() {
                   <Lightbulb className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="font-medium">Tip</p>
+                  <p className="font-medium">{t("cart.tip")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Use the Destination page to discover Cairo, Alexandria, Aswan, and more.
+                    {t("cart.tipDesc")}
                   </p>
                 </div>
               </div>
@@ -251,15 +254,15 @@ export default function CartPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div className="space-y-1">
                 <h2 className="text-2xl font-semibold tracking-tight">
-                  Items <span className="text-muted-foreground">({cartItems.length})</span>
+                  {t("cart.items")} <span className="text-muted-foreground">({cartItems.length})</span>
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Double-check your selections, then proceed to checkout.
+                  {t("cart.doubleCheck")}
                 </p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={clearCart}>
-                  Clear Cart
+                  {t("cart.clearCart")}
                 </Button>
               </div>
             </div>
@@ -297,7 +300,7 @@ export default function CartPage() {
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant="secondary">
-                                {item.productType === "tour" ? "Tour" : "Add-on"}
+                                {item.productType === "tour" ? t("cart.tourBadge") : t("cart.addonBadge")}
                               </Badge>
                               {item.productType === "tour" && (
                                 <Badge variant="outline">{(item.product as Tour).destination}</Badge>
@@ -327,13 +330,13 @@ export default function CartPage() {
                         {item.productType === "tour" && (
                           <div className="grid gap-2 rounded-2xl border bg-muted/30 p-4 sm:grid-cols-2">
                             <div className="space-y-0.5">
-                              <p className="text-xs font-medium text-muted-foreground">Date</p>
+                              <p className="text-xs font-medium text-muted-foreground">{t("cart.date")}</p>
                               <p className="text-sm font-medium">
-                                {item.date ? format(new Date(item.date), "PPP") : "Not selected"}
+                                {item.date ? format(new Date(item.date), "PPP") : t("cart.notSelected")}
                               </p>
                             </div>
                             <div className="space-y-0.5">
-                              <p className="text-xs font-medium text-muted-foreground">Guests</p>
+                              <p className="text-xs font-medium text-muted-foreground">{t("cart.guests")}</p>
                               <p className="text-sm font-medium">
                                 {(item.adults ?? 0).toString()} Adults, {(item.children ?? 0).toString()} Children
                               </p>
@@ -351,67 +354,67 @@ export default function CartPage() {
           <div className="space-y-6 lg:sticky lg:top-24">
             <Card className="overflow-hidden rounded-3xl border bg-card">
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>{t("cart.orderSummary")}</CardTitle>
                 <CardDescription>
                   {cartItems.length} item{cartItems.length === 1 ? "" : "s"} in your cart
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("cart.subtotal")}</span>
                   <span className="font-medium">{formatPrice(getCartTotal())}</span>
                 </div>
                 
                 {promoCode ? (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount ({promoCode.code})</span>
+                    <span>{t("cart.discount")} ({promoCode.code})</span>
                     <span>-{formatPrice(getDiscountAmount())}</span>
                   </div>
                 ) : null}
 
                 <div className="flex gap-2">
                    <Input 
-                     placeholder="Promo code" 
+                     placeholder={t("cart.promoPlaceholder")} 
                      value={promoCodeInput} 
                      onChange={(e) => setPromoCodeInput(e.target.value)}
                      disabled={!!promoCode} 
                      className="bg-background"
                    />
                    {promoCode ? (
-                      <Button variant="outline" onClick={removePromoCode}>Remove</Button>
+                      <Button variant="outline" onClick={removePromoCode}>{t("cart.remove")}</Button>
                    ) : (
                       <Button onClick={handleApplyPromo} disabled={!promoCodeInput || isApplyingPromo} variant="outline">
-                        {isApplyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                        {isApplyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : t("cart.apply")}
                       </Button>
                    )}
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Taxes & fees</span>
-                  <span className="text-sm text-muted-foreground">Calculated at checkout</span>
+                  <span className="text-muted-foreground">{t("cart.taxesFees")}</span>
+                  <span className="text-sm text-muted-foreground">{t("cart.taxesCalc")}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                  <span>{t("cart.total")}</span>
                   <span>{formatPrice(getFinalTotal())}</span>
                 </div>
                 <div className="grid gap-2 rounded-2xl border bg-muted/30 p-4 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Secure checkout</span>
-                    <span className="font-medium">Enabled</span>
+                    <span className="text-muted-foreground">{t("cart.secureCheckout")}</span>
+                    <span className="font-medium">{t("cart.enabled")}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Support</span>
-                    <span className="font-medium">24/7</span>
+                    <span className="text-muted-foreground">{t("cart.support")}</span>
+                    <span className="font-medium">{t("cart.support247")}</span>
                   </div>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
                 <Button asChild className="w-full" size="lg">
-                  <Link href="/checkout">Proceed to Checkout</Link>
+                  <Link href="/checkout">{t("cart.proceedCheckout")}</Link>
                 </Button>
                 <Button asChild className="w-full" size="lg" variant="outline">
-                  <Link href="/tours">Add More Tours</Link>
+                  <Link href="/tours">{t("cart.addMoreTours")}</Link>
                 </Button>
               </CardFooter>
             </Card>
@@ -419,9 +422,9 @@ export default function CartPage() {
             {upsellItems.length > 0 && (
               <Card className="overflow-hidden rounded-3xl border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-lg">Add More to Your Trip?</CardTitle>
+                  <CardTitle className="text-lg">{t("cart.addMore")}</CardTitle>
                   <CardDescription>
-                    Enhance your experience with these additional services.
+                    {t("cart.enhanceExp")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -468,10 +471,10 @@ export default function CartPage() {
                             }
                           >
                             <SelectTrigger className="w-full sm:w-56">
-                              <SelectValue placeholder="Select option" />
+                              <SelectValue placeholder={t("cart.selectOption")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__base__">Base</SelectItem>
+                              <SelectItem value="__base__">{t("cart.base")}</SelectItem>
                               {(item.variants ?? [])
                                 .filter((variant): variant is { id: string; name: string; price: number } =>
                                   Boolean(variant.id),
@@ -501,7 +504,7 @@ export default function CartPage() {
                           }
                           disabled={alreadyInCart}
                         >
-                          <PlusCircle className="mr-1 h-4 w-4" /> Add
+                          <PlusCircle className="mr-1 h-4 w-4" /> {t("cart.addBtn")}
                         </Button>
                       </div>
                     </div>
@@ -512,8 +515,8 @@ export default function CartPage() {
 
             <Card className="overflow-hidden rounded-3xl border bg-card">
               <CardHeader>
-                <CardTitle className="text-lg">Need Inspiration?</CardTitle>
-                <CardDescription>Get quick ideas based on what’s in your cart.</CardDescription>
+                <CardTitle className="text-lg">{t("cart.needInspiration")}</CardTitle>
+                <CardDescription>{t("cart.getIdeas")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <form
@@ -525,12 +528,12 @@ export default function CartPage() {
                   ))}
                   <SubmitButton />
                   <Button asChild variant="outline">
-                    <Link href="/tours">Browse Tours</Link>
+                    <Link href="/tours">{t("cart.browseToursBtn")}</Link>
                   </Button>
                 </form>
                 {state.suggestions && state.suggestions.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="font-semibold">Here are some ideas:</h4>
+                    <h4 className="font-semibold">{t("cart.hereAreIdeas")}</h4>
                     <div className="grid gap-2">
                       {state.suggestions.map((suggestion, index) => (
                         <div key={index} className="rounded-2xl border bg-muted/30 p-3 text-sm">

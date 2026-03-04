@@ -1,5 +1,7 @@
 
 export type AgencyModules = {
+  tours?: boolean;
+  hotels?: boolean;
   blog?: boolean;
   upsell?: boolean;
   contact?: boolean;
@@ -9,6 +11,7 @@ export type AgencyModules = {
 
 export type AgencySettings = {
   tier?: string;
+  onboarding_dismissed?: boolean;
   modules?: AgencyModules;
   theme?: {
     primaryColor?: string;

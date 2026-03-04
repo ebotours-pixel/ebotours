@@ -14,19 +14,37 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard } from "lucide-react";
 
-const SUPER_ADMIN_EMAIL = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
-
-export async function checkSuperAdmin() {
+/**
+ * Checks whether the currently authenticated user is a super admin.
+ *
+ * Primary check: queries the `profiles` table for `is_super_admin = true`.
+ * Fallback: compares email against `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` env var so
+ * that existing deployments keep working until the DB flag is set.
+ */
+export async function checkSuperAdmin(): Promise<boolean> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !user.email) {
-    return false;
+  if (!user) return false;
+
+  // Primary: DB role check
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_super_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.is_super_admin === true) return true;
+
+  // Fallback: env-based email check (backwards compat)
+  const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL;
+  if (superAdminEmail && user.email) {
+    return user.email.toLowerCase() === superAdminEmail.toLowerCase();
   }
 
-  return user.email.toLowerCase() === SUPER_ADMIN_EMAIL?.toLowerCase();
+  return false;
 }
 
 export default async function SuperAdminLayout({
@@ -40,7 +58,6 @@ export default async function SuperAdminLayout({
   } = await supabase.auth.getUser();
 
   const currentEmail = user?.email || "Not logged in";
-  const expectedEmail = SUPER_ADMIN_EMAIL || "Not configured";
   const isSuper = await checkSuperAdmin();
 
   if (!isSuper) {
@@ -59,10 +76,6 @@ export default async function SuperAdminLayout({
             <div className="flex justify-between">
               <span className="font-semibold text-zinc-700">Current User:</span>
               <span className="font-mono text-zinc-600">{currentEmail}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold text-zinc-700">Required:</span>
-              <span className="font-mono text-zinc-600">{expectedEmail}</span>
             </div>
           </div>
 

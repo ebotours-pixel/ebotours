@@ -17,7 +17,9 @@ export default {
       },
     },
     extend: {
-      
+      height: {
+        "13": "3.25rem",
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { Tour } from "@/types";
+import type { Tour, TourDateAvailability } from "@/types";
 import Image from "next/image";
+import { BLUR_DATA_URL } from "@/lib/blur-data-url";
 import { useCart } from "@/hooks/use-cart";
 import { useCurrency } from "@/hooks/use-currency";
+import { useLanguage } from "@/hooks/use-language";
 
 import {
   Card,
@@ -33,6 +35,7 @@ import {
   ShoppingCart,
   CheckCircle,
   XCircle,
+  ShoppingBag,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,17 +43,68 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface TourDetailsClientProps {
   tour: Tour;
+  availability?: TourDateAvailability[];
 }
 
-export function TourDetailsClient({ tour }: TourDetailsClientProps) {
+export function TourDetailsClient({ tour, availability = [] }: TourDetailsClientProps) {
   const { addToCart } = useCart();
   const { format } = useCurrency();
+  const { t } = useLanguage();
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [selectedPackageId, setSelectedPackageId] = useState<string | undefined>(
     tour.packages && tour.packages.length > 0 ? tour.packages[0].id : undefined
   );
+
+  // Build blocked dates set and limited-spots modifiers from availability data
+  const blockedDatesSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const entry of availability) {
+      if (entry.isBlocked) set.add(entry.date);
+    }
+    return set;
+  }, [availability]);
+
+  const limitedDates = useMemo(() => {
+    return availability
+      .filter((e) => !e.isBlocked && e.availableSpots !== null)
+      .map((e) => new Date(e.date + "T00:00:00"));
+  }, [availability]);
+
+  const availabilityMap = useMemo(() => {
+    const map = new Map<string, TourDateAvailability>();
+    for (const entry of availability) {
+      map.set(entry.date, entry);
+    }
+    return map;
+  }, [availability]);
+
+  const calendarModifiers = {
+    limited: limitedDates,
+  };
+
+  const calendarModifiersStyles: Record<string, React.CSSProperties> = {
+    limited: {
+      backgroundColor: "hsl(45 93% 47% / 0.15)",
+      borderRadius: "6px",
+    },
+  };
+
+  const isDateDisabled = (d: Date) => {
+    // Past dates
+    if (d < new Date(new Date().setDate(new Date().getDate() - 1))) return true;
+    // Blocked dates
+    const dateStr = d.toISOString().split("T")[0];
+    return blockedDatesSet.has(dateStr);
+  };
+
+  // Get availability info for selected date
+  const selectedDateInfo = useMemo(() => {
+    if (!date) return null;
+    const dateStr = date.toISOString().split("T")[0];
+    return availabilityMap.get(dateStr) || null;
+  }, [date, availabilityMap]);
 
   const totalPeople = useMemo(() => adults + children, [adults, children]);
 
@@ -96,7 +150,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
   };
 
   return (
-    <div className="grid lg:grid-cols-5 gap-12">
+    <div className="grid lg:grid-cols-5 gap-12 pb-24 lg:pb-0">
       {/* Left Column: Tour Info */}
       <div className="lg:col-span-3 space-y-8">
         <Card className="overflow-hidden">
@@ -111,6 +165,8 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                       fill
                       className="object-cover"
                       data-ai-hint={`${tour.destination} ${tour.type[0]}`}
+                      placeholder="blur"
+                      blurDataURL={BLUR_DATA_URL}
                       priority={index === 0}
                     />
                   </div>
@@ -153,7 +209,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                   {tour.includes && (
                     <div>
                       <h3 className="font-bold text-lg mb-2 text-green-700">
-                        Tour Includes
+                        {t("tour.includes")}
                       </h3>
                       <ul className="space-y-2 text-sm">
                         {tour.includes.map((item, index) => (
@@ -176,7 +232,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                   {tour.excludes && (
                     <div>
                       <h3 className="font-bold text-lg mb-2 text-destructive">
-                        Tour Excludes
+                        {t("tour.excludes")}
                       </h3>
                       <ul className="space-y-2 text-sm">
                         {tour.excludes.map((item, index) => (
@@ -204,24 +260,24 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
             <Card className="bg-muted/50">
               <CardHeader>
                 <CardTitle className="text-xl text-primary">
-                  Tour Details
+                  {t("tour.details")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
                 <p>
                   <span className="font-semibold text-foreground">
-                    Duration:
+                    {t("tour.durationLabel")}
                   </span>{" "}
                   {tour.durationText ?? `${tour.duration} days`}
                 </p>
                 <p>
-                  <span className="font-semibold text-foreground">Type:</span>{" "}
+                  <span className="font-semibold text-foreground">{t("tour.typeLabel")}</span>{" "}
                   {tour.tourType ?? tour.type.join(", ")}
                 </p>
                 {tour.availabilityDescription && (
                   <p>
                     <span className="font-semibold text-foreground">
-                      Availability:
+                      {t("tour.availabilityLabel")}
                     </span>{" "}
                     {tour.availabilityDescription}
                   </p>
@@ -229,7 +285,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                 {tour.pickupAndDropoff && (
                   <p>
                     <span className="font-semibold text-foreground">
-                      Pick up & drop off:
+                      {t("tour.pickupDropoff")}
                     </span>{" "}
                     {tour.pickupAndDropoff}
                   </p>
@@ -242,7 +298,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
         {tour.itinerary && tour.itinerary.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl md:text-3xl">Itinerary</CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">{t("tour.itinerary")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -258,7 +314,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-primary">
-                        Day {item.day}
+                        {t("tour.dayLabel")} {item.day}
                       </h3>
                       <p className="text-muted-foreground">{item.activity}</p>
                     </div>
@@ -272,7 +328,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
         {tour.cancellationPolicy && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl md:text-3xl">Cancellation Policy</CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">{t("tour.cancellationPolicy")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground text-sm">
@@ -289,7 +345,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
           {tour.highlights && (
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-2xl md:text-3xl">Highlights</CardTitle>
+                <CardTitle className="font-headline text-2xl md:text-3xl">{t("tour.highlights")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 text-sm">
@@ -315,10 +371,10 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline text-2xl md:text-3xl">Pricing</CardTitle>
+              <CardTitle className="font-headline text-2xl md:text-3xl">{t("tour.pricing")}</CardTitle>
               {currentPackage && (
                 <p className="text-sm text-muted-foreground">
-                  Showing prices for: <span className="font-semibold">{currentPackage.name}</span>
+                  {t("tour.showingPricesFor")} <span className="font-semibold">{currentPackage.name}</span>
                 </p>
               )}
             </CardHeader>
@@ -326,9 +382,9 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 font-semibold">Group Size</th>
-                    <th className="text-center py-2 font-semibold">Adult</th>
-                    <th className="text-center py-2 font-semibold">Child</th>
+                    <th className="text-left py-2 font-semibold">{t("tour.groupSize")}</th>
+                    <th className="text-center py-2 font-semibold">{t("tour.adult")}</th>
+                    <th className="text-center py-2 font-semibold">{t("tour.child")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,7 +395,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                     >
                       <td className="py-2 font-medium">
                         {tier.minPeople}
-                        {tier.maxPeople ? ` - ${tier.maxPeople}` : "+"} persons
+                        {tier.maxPeople ? ` - ${tier.maxPeople}` : "+"} {t("tour.persons")}
                       </td>
                       <td className="py-2 text-center">
                         {format(tier.pricePerAdult)}
@@ -352,7 +408,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                 </tbody>
               </table>
               <p className="text-xs text-muted-foreground mt-2">
-                *Infants travel for free.
+                {t("tour.infantsFree")}
               </p>
             </CardContent>
           </Card>
@@ -360,13 +416,13 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
           <Card>
             <CardHeader>
               <CardTitle className="font-headline text-2xl md:text-3xl">
-                Book Your Spot
+                {t("tour.bookSpot")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {tour.packages && tour.packages.length > 0 && (
                 <div>
-                  <Label className="font-semibold mb-2 block">Select Package</Label>
+                  <Label className="font-semibold mb-2 block">{t("tour.selectPackage")}</Label>
                   <RadioGroup
                     value={selectedPackageId}
                     onValueChange={setSelectedPackageId}
@@ -397,21 +453,27 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
               )}
 
               <div>
-                <Label className="font-semibold mb-2 block">Select Date</Label>
+                <Label className="font-semibold mb-2 block">{t("tour.selectDate")}</Label>
                 <Calendar
                   mode="single"
                   selected={date}
                   onSelect={setDate}
                   className="rounded-md border"
-                  disabled={(d) =>
-                    d < new Date(new Date().setDate(new Date().getDate() - 1))
-                  }
+                  disabled={isDateDisabled}
+                  modifiers={calendarModifiers}
+                  modifiersStyles={calendarModifiersStyles}
                 />
+                {selectedDateInfo && !selectedDateInfo.isBlocked && selectedDateInfo.availableSpots !== null && (
+                  <p className="mt-2 text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                    {selectedDateInfo.availableSpots} {selectedDateInfo.availableSpots === 1 ? t("tour.spot") : t("tour.spotsRemaining")}
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="adults" className="font-semibold">
-                    Adults
+                    {t("tour.adults")}
                   </Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Button
@@ -439,7 +501,7 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                 </div>
                 <div>
                   <Label htmlFor="children" className="font-semibold">
-                    Children
+                    {t("tour.children")}
                   </Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Button
@@ -469,21 +531,21 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
               <Separator />
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Adults Price</span>
+                  <span className="text-muted-foreground">{t("tour.adultsPrice")}</span>
                   <span>
                     {adults} x{" "}
                     {format(currentPriceTier?.pricePerAdult ?? 0)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Children Price</span>
+                  <span className="text-muted-foreground">{t("tour.childrenPrice")}</span>
                   <span>
                     {children} x{" "}
                     {format(currentPriceTier?.pricePerChild ?? 0)}
                   </span>
                 </div>
                 <div className="flex justify-between font-bold text-xl text-primary pt-2">
-                  <span>Total Price</span>
+                  <span>{t("tour.totalPrice")}</span>
                   <span>{format(totalPrice)}</span>
                 </div>
               </div>
@@ -496,10 +558,47 @@ export function TourDetailsClient({ tour }: TourDetailsClientProps) {
                 disabled={!date}
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
-                {!date ? "Please select a date" : "Add to Cart"}
+                {!date ? t("tour.selectDateFirst") : t("tour.addToCart")}
               </Button>
             </CardFooter>
           </Card>
+        </div>
+      </div>
+
+      {/* ── Mobile sticky Book Now bar ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <div>
+            {date ? (
+              <>
+                <p className="text-xs text-muted-foreground">{t("tour.totalLabel")}</p>
+                <p className="text-lg font-bold text-primary">{format(totalPrice)}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">{t("tour.fromLabel")}</p>
+                <p className="text-lg font-bold text-primary">
+                  {format(
+                    Math.min(
+                      ...(currentPackage
+                        ? currentPackage.priceTiers
+                        : tour.priceTiers
+                      ).map((t) => t.pricePerAdult).filter((p) => typeof p === "number")
+                    )
+                  )}
+                </p>
+              </>
+            )}
+          </div>
+          <Button
+            onClick={handleBooking}
+            size="lg"
+            disabled={!date}
+            className="flex-1 max-w-xs gap-2"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {date ? `${t("tour.bookNow")} · ${adults + children} ${adults + children === 1 ? t("tour.person") : t("tour.people")}` : t("tour.selectDateMobile")}
+          </Button>
         </div>
       </div>
     </div>

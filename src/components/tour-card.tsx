@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Star, Heart, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { BLUR_DATA_URL } from "@/lib/blur-data-url";
 
 interface TourCardProps {
   tour: Tour;
@@ -44,7 +45,7 @@ export function TourCard({ tour }: TourCardProps) {
   const ratingLabel =
     typeof tour.rating === "number" && Number.isFinite(tour.rating) && tour.rating > 0
       ? tour.rating.toFixed(1)
-      : "New";
+      : t("tour.new");
 
   const handleFavoriteClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -67,6 +68,8 @@ export function TourCard({ tour }: TourCardProps) {
               className="object-cover transition-transform duration-700 group-hover:scale-110"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               data-ai-hint={`${tour.destination} ${(Array.isArray(tour.type) ? tour.type[0] : "") || "travel"}`}
+              placeholder="blur"
+              blurDataURL={BLUR_DATA_URL}
               priority={false}
             />
           ) : (
@@ -124,10 +127,10 @@ export function TourCard({ tour }: TourCardProps) {
             <div className="text-sm text-muted-foreground">{t("featured.from")}</div>
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-bold text-primary">
-                {startingPrice != null ? format(startingPrice) : "Contact us"}
+                {startingPrice != null ? format(startingPrice) : t("tour.contactUs")}
               </span>
               {startingPrice != null && (
-                <span className="text-xs text-muted-foreground">/person</span>
+                <span className="text-xs text-muted-foreground">{t("tour.perPerson")}</span>
               )}
             </div>
           </div>

@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { TourDetailsClient } from "@/components/tour-details-client";
 import type { Metadata } from "next";
 import { getAgencySettings } from "@/lib/supabase/agency-content";
+import { getCurrentAgency } from "@/lib/supabase/agencies";
+import { getApprovedReviewsForTour } from "@/lib/supabase/reviews";
+import { getPublicTourAvailability } from "@/lib/supabase/tour-availability";
+import { ReviewForm } from "@/components/review-form";
+import { ReviewsDisplay } from "@/components/reviews-display";
 
 interface TourDetailsPageProps {
   params: Promise<{
@@ -56,6 +61,29 @@ export default async function TourDetailsPage({
     notFound();
   }
 
-  return <TourDetailsClient tour={tour} />;
+  // Fetch agency + reviews + availability in parallel
+  const [agency, reviews, availability] = await Promise.all([
+    getCurrentAgency(),
+    getApprovedReviewsForTour(tour.id),
+    getPublicTourAvailability(tour.id),
+  ]);
+
+  const reviewsEnabled = agency?.settings?.modules?.reviews !== false;
+
+  return (
+    <>
+      <TourDetailsClient tour={tour} availability={availability} />
+      {reviewsEnabled && (
+        <div className="mx-auto w-full max-w-6xl space-y-8 px-4 pb-10">
+          <ReviewsDisplay reviews={reviews} title={`Reviews for ${tour.name}`} />
+          <ReviewForm
+            agencyId={agency?.id || ""}
+            tourId={tour.id}
+            itemName={tour.name}
+          />
+        </div>
+      )}
+    </>
+  );
 }
 

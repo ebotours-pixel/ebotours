@@ -26,6 +26,32 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
     setCustomers((prev) => prev.filter((c) => c.id !== customerId));
   };
 
+  const handleExportCSV = () => {
+    const headers = ["ID", "Name", "Email", "Phone", "Nationality", "Total Bookings", "Total Spent", "Joined"];
+    const rows = customers.map((c) =>
+      [
+        c.id,
+        `"${(c.name ?? "").replace(/"/g, '""')}"`,
+        c.email ?? "",
+        c.phone ?? "",
+        c.nationality ?? "",
+        c.totalBookings ?? 0,
+        c.totalSpent ?? 0,
+        c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "",
+      ].join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `customers-${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleSync = async () => {
     setIsSyncing(true);
     try {
@@ -62,7 +88,7 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
             <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
             Sync from Bookings
           </Button>
-          <Button>
+          <Button onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" />
             Export List
           </Button>

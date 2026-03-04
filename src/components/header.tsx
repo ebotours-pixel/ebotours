@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ShoppingCart,
   Search,
@@ -35,23 +36,9 @@ import type { Currency } from "@/hooks/use-currency";
 import { useLanguage, languages } from "@/hooks/use-language";
 import { useCurrency, currencies } from "@/hooks/use-currency";
 import { cn } from "@/lib/utils";
-import { getAgencySettings } from "@/lib/supabase/agency-content";
+import { getAgencySettings, AgencySettingsData } from "@/lib/supabase/agency-content";
 
-type SettingsData = {
-  agencyName?: string;
-  phoneNumber?: string;
-  contactEmail?: string;
-  address?: string;
-  aboutUs?: string;
-  tagline?: string;
-  navLinks?: { label: string; href: string }[];
-  socialMedia?: {
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    linkedin?: string;
-  };
-};
+type SettingsData = AgencySettingsData;
 
 function normalizeNavHref(href: string | undefined | null) {
   const raw = String(href || "").trim();
@@ -152,7 +139,7 @@ function TopBar({
 }
 
 function LanguageCurrencySelector() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const { currency, setCurrency } = useCurrency();
   const currentLang = languages.find((l) => l.code === language);
 
@@ -171,7 +158,7 @@ function LanguageCurrencySelector() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 p-2">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground uppercase tracking-wider px-2 py-1.5">
-          Language
+          {t("header.language")}
         </DropdownMenuLabel>
         <div className="grid grid-cols-1 gap-1 mb-2">
           {languages.map((lang) => (
@@ -195,7 +182,7 @@ function LanguageCurrencySelector() {
         <DropdownMenuSeparator />
         
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground uppercase tracking-wider px-2 py-1.5 mt-2">
-          Currency
+          {t("header.currency")}
         </DropdownMenuLabel>
         <div className="grid grid-cols-2 gap-1">
           {currencies.map((curr) => (
@@ -223,6 +210,7 @@ export function Header() {
   const { cartItems } = useCart();
   const { wishlistItems } = useWishlist();
   const { t } = useLanguage();
+  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [settings, setSettings] = useState<{ data: SettingsData; logo_url?: string | null } | null>(null);
@@ -231,16 +219,26 @@ export function Header() {
     setIsClient(true);
 
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      setIsScrolled(window.scrollY > 80);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const headerClasses = isScrolled
-    ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-md"
-    : "bg-background";
+  const isTransparent = pathname === "/" && !isScrolled;
+
+  const headerClasses = isTransparent
+    ? "bg-transparent"
+    : isScrolled
+      ? "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-md"
+      : "bg-background";
+
+  const navLinkClass = isTransparent
+    ? "font-medium text-white/90 transition-colors hover:text-white drop-shadow"
+    : "font-medium text-foreground transition-colors hover:text-primary";
+
+  const iconClass = isTransparent ? "text-white/90 hover:text-white" : "text-foreground";
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -262,18 +260,22 @@ export function Header() {
   const wishlistItemCount = isClient ? wishlistItems.length : 0;
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-300`}>
-      <div className="hidden md:block">
-        <TopBar
-          contactEmail={settings?.data?.contactEmail}
-          phoneNumber={settings?.data?.phoneNumber}
-          address={settings?.data?.address}
-          socialMedia={settings?.data?.socialMedia}
-        />
-      </div>
+    <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500`}>
+      {!isTransparent && (
+        <div className="hidden md:block">
+          <TopBar
+            contactEmail={settings?.data?.contactEmail}
+            phoneNumber={settings?.data?.phoneNumber}
+            address={settings?.data?.address}
+            socialMedia={settings?.data?.socialMedia}
+          />
+        </div>
+      )}
       {/* Egyptian accent bar */}
-      <div className="h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-      <div className={`transition-all duration-300 ${headerClasses}`}> 
+      {!isTransparent && (
+        <div className="h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+      )}
+      <div className={`transition-all duration-500 ${headerClasses}`}> 
         <div className="container flex h-20 max-w-screen-2xl items-center justify-between px-4">
           <Link
             href="/"
@@ -284,11 +286,11 @@ export function Header() {
               alt={settings?.data?.agencyName || "Travel Agency"}
             />
             <div className="hidden sm:block">
-              <span className="font-headline text-xl md:text-2xl font-bold text-foreground">
+              <span className={cn("font-headline text-xl md:text-2xl font-bold", isTransparent ? "text-white drop-shadow" : "text-foreground")}>
                 {settings?.data?.agencyName || "Travel Agency"}
               </span>
               {settings?.data?.tagline ? (
-                <p className="text-[10px] md:text-xs text-muted-foreground">
+                <p className={cn("text-[10px] md:text-xs", isTransparent ? "text-white/75" : "text-muted-foreground")}>
                   {settings.data.tagline}
                 </p>
               ) : null}
@@ -301,20 +303,29 @@ export function Header() {
                 <Link
                   key={`${l.label}-${l.href}`}
                   href={getNavHref(l.label, l.href)}
-                  className="font-medium text-foreground transition-colors hover:text-primary"
+                  className={navLinkClass}
                 >
                   {l.label}
                 </Link>
               ))
             ) : (
               <>
-                <Link href="/" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.home")}</Link>
-                <Link href="/about" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.about")}</Link>
-                <Link href="/destination" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.destination")}</Link>
-                <Link href="/tours" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.tours")}</Link>
-                <Link href="/services" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.services")}</Link>
-                <Link href="/blog" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.blog")}</Link>
-                <Link href="/contact" className="font-medium text-foreground transition-colors hover:text-primary">{t("nav.contact")}</Link>
+                <Link href="/" className={navLinkClass}>{t("nav.home")}</Link>
+                <Link href="/about" className={navLinkClass}>{t("nav.about")}</Link>
+                <Link href="/destination" className={navLinkClass}>{t("nav.destination")}</Link>
+                {settings?.data?.modules?.tours !== false ? (
+                  <Link href="/tours" className={navLinkClass}>{t("nav.tours")}</Link>
+                ) : null}
+                {settings?.data?.modules?.hotels !== false ? (
+                  <Link href={settings?.data?.singleHotelMode ? "/hotels/default" : "/hotels"} className={navLinkClass}>
+                    {settings?.data?.singleHotelMode ? t("nav.ourRooms") : t("nav.hotels")}
+                  </Link>
+                ) : null}
+                <Link href="/services" className={navLinkClass}>{t("nav.services")}</Link>
+                {settings?.data?.modules?.blog !== false ? (
+                  <Link href="/blog" className={navLinkClass}>{t("nav.blog")}</Link>
+                ) : null}
+                <Link href="/contact" className={navLinkClass}>{t("nav.contact")}</Link>
               </>
             )}
           </nav>
@@ -322,12 +333,12 @@ export function Header() {
           <div className="flex items-center gap-1 md:gap-2">
             <LanguageCurrencySelector />
             <Button variant="ghost" size="icon" className="hidden sm:flex">
-              <Search className="h-5 w-5 text-foreground" />
+              <Search className={cn("h-5 w-5", iconClass)} />
               <span className="sr-only">Search</span>
             </Button>
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/wishlist">
-                <Heart className="h-5 w-5 md:h-6 md:w-6 text-foreground" />
+                <Heart className={cn("h-5 w-5 md:h-6 md:w-6", iconClass)} />
                 {isClient && wishlistItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-primary text-[10px] md:text-xs font-bold text-primary-foreground">
                     {wishlistItemCount}
@@ -338,7 +349,7 @@ export function Header() {
             </Button>
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/cart">
-                <ShoppingCart className="h-5 w-5 md:h-6 md:w-6 text-foreground" />
+                <ShoppingCart className={cn("h-5 w-5 md:h-6 md:w-6", iconClass)} />
                 {isClient && itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-primary text-[10px] md:text-xs font-bold text-primary-foreground">
                     {itemCount}
@@ -348,16 +359,25 @@ export function Header() {
               </Link>
             </Button>
             
+            {/* H4.3 — click-to-call (mobile only) */}
+            {settings?.data?.phoneNumber && (
+              <Button variant="ghost" size="icon" className="lg:hidden" asChild>
+                <a href={`tel:${settings.data.phoneNumber}`} aria-label="Call us">
+                  <Phone className={cn("h-5 w-5", iconClass)} />
+                </a>
+              </Button>
+            )}
+
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden ml-1">
-                  <Menu className="h-6 w-6 text-foreground" />
+                  <Menu className={cn("h-6 w-6", iconClass)} />
                   <span className="sr-only">Menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                   <SheetTitle>Menu</SheetTitle>
+                   <SheetTitle>{t("header.menu")}</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 mt-8">
                   <nav className="flex flex-col gap-4">
@@ -373,13 +393,22 @@ export function Header() {
                       ))
                     ) : (
                       <>
-                        <Link href="/" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Home</Link>
-                        <Link href="/about" className="text-lg font-medium text-foreground transition-colors hover:text-primary">About Us</Link>
-                        <Link href="/destination" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Destination</Link>
-                        <Link href="/tours" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Tour</Link>
-                        <Link href="/services" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Services</Link>
-                        <Link href="/blog" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Blog</Link>
-                        <Link href="/contact" className="text-lg font-medium text-foreground transition-colors hover:text-primary">Contact</Link>
+                        <Link href="/" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.home")}</Link>
+                        <Link href="/about" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.about")}</Link>
+                        <Link href="/destination" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.destination")}</Link>
+                        {settings?.data?.modules?.tours !== false ? (
+                          <Link href="/tours" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.tours")}</Link>
+                        ) : null}
+                        {settings?.data?.modules?.hotels !== false ? (
+                          <Link href={settings?.data?.singleHotelMode ? "/hotels/default" : "/hotels"} className="text-lg font-medium text-foreground transition-colors hover:text-primary">
+                            {settings?.data?.singleHotelMode ? t("nav.ourRooms") : t("nav.hotels")}
+                          </Link>
+                        ) : null}
+                        <Link href="/services" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.services")}</Link>
+                        {settings?.data?.modules?.blog !== false ? (
+                          <Link href="/blog" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.blog")}</Link>
+                        ) : null}
+                        <Link href="/contact" className="text-lg font-medium text-foreground transition-colors hover:text-primary">{t("nav.contact")}</Link>
                       </>
                     )}
                   </nav>

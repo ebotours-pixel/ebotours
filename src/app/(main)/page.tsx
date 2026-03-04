@@ -1,5 +1,6 @@
 import React from "react";
 import { getTours } from "@/lib/supabase/tours";
+import { getPublicHotels, getPublicRoomTypesByHotelId } from "@/lib/supabase/hotels";
 import { createClient } from "@/lib/supabase/server";
 import HomePageClient from "./home-client";
 import type { Post } from "@/types";
@@ -59,14 +60,21 @@ export default async function HomePage() {
   const toursLimit = Math.max(popularCount || 0, offersCount || 0);
 
   const initialTours = await getTours({ limit: toursLimit > 0 ? toursLimit : undefined });
+  const hotels = await getPublicHotels();
+
+  // Fetch room types for single-hotel mode (first active hotel's rooms)
+  const roomTypes = hotels.length > 0 ? await getPublicRoomTypesByHotelId(hotels[0].id).catch(() => []) : [];
 
   return (
     <HomePageClient 
       initialTours={initialTours} 
+      hotels={hotels}
+      roomTypes={roomTypes}
       homeContent={homeContent}
       articles={articles}
       tourDestinations={settings?.data?.tourDestinations ?? []}
       tourCategories={settings?.data?.tourCategories ?? []}
+      settings={settings?.data || null}
     />
   );
 }

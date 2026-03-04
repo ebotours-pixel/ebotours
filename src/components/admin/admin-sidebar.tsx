@@ -30,6 +30,8 @@ import {
   Percent,
   LogOut,
   MessageCircle,
+  Building2,
+  Star,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { User } from "@supabase/supabase-js";
 import { AgencySettings } from "@/types/agency";
 
@@ -66,11 +69,16 @@ const getPageTitle = (pathname: string) => {
   if (pathname.startsWith("/admin/dashboard")) return "Dashboard";
   if (pathname.startsWith("/admin/tours")) return "Tours";
   if (pathname.startsWith("/admin/bookings")) return "Bookings";
+  if (pathname.startsWith("/admin/hotels/bookings")) return "Hotel Bookings";
+  if (pathname.startsWith("/admin/hotels/rooms")) return "Room Types";
+  if (pathname.startsWith("/admin/hotels/availability")) return "Availability & Rates";
+  if (pathname.startsWith("/admin/hotels")) return "Hotels Dashboard";
   if (pathname.startsWith("/admin/customers")) return "Customers";
   if (pathname.startsWith("/admin/blog")) return "Blog";
   if (pathname.startsWith("/admin/home-page-editor")) return "Home Page Editor";
   if (pathname.startsWith("/admin/upsell-items")) return "Upsell Items";
   if (pathname.startsWith("/admin/promotions")) return "Promotions";
+  if (pathname.startsWith("/admin/reviews")) return "Reviews";
   if (pathname.startsWith("/admin/contact-messages")) return "Contact Messages";
   if (pathname.startsWith("/admin/settings")) return "Settings";
   return "Admin";
@@ -81,16 +89,18 @@ export function AdminSidebar({
   handleSignOut,
   children,
   settings,
+  pendingBookingsCount,
 }: {
   user: User;
   handleSignOut: () => void;
   children: React.ReactNode;
   settings?: AgencySettings;
+  pendingBookingsCount?: number;
 }) {
   const pathname = usePathname();
 
   // Filter menu items based on settings.modules
-  const modules = settings?.modules || { blog: true, upsell: true, contact: true }; // Default true if undefined
+  const modules = settings?.modules || { blog: true, upsell: true, contact: true, tours: true, hotels: true };
   
   // Menu items grouped by category
   const groups = [
@@ -106,6 +116,16 @@ export function AdminSidebar({
         { href: "/admin/tours", label: "Tours", icon: Globe },
         { href: "/admin/bookings", label: "Bookings", icon: Calendar },
         { href: "/admin/customers", label: "Customers", icon: Users },
+        { href: "/admin/reviews", label: "Reviews", icon: Star },
+      ],
+    },
+    {
+      label: "Hotels",
+      items: [
+        { href: "/admin/hotels", label: "Hotels Dashboard", icon: Building2 },
+        { href: "/admin/hotels/rooms", label: "Room Types", icon: LayoutDashboard },
+        { href: "/admin/hotels/availability", label: "Availability", icon: Calendar },
+        { href: "/admin/hotels/bookings", label: "Bookings", icon: Calendar },
       ],
     },
     {
@@ -130,6 +150,16 @@ export function AdminSidebar({
     if (label === "Blog" && modules.blog === false) return false;
     if (label === "Upsell Items" && modules.upsell === false) return false;
     if (label === "Contact Messages" && modules.contact === false) return false;
+    if (label === "Reviews" && modules.reviews === false) return false;
+    if (label === "Tours" && modules.tours === false) return false;
+    if (
+      (label === "Hotels Dashboard" ||
+        label === "Room Types" ||
+        label === "Availability" ||
+        label === "Bookings") &&
+      modules.hotels === false
+    )
+      return false;
     return true;
   };
 
@@ -157,17 +187,31 @@ export function AdminSidebar({
                 <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {visibleItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          href={item.href}
-                          isActive={pathname.startsWith(item.href)}
-                        >
-                          <item.icon />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    {visibleItems.map((item) => {
+                      const isPendingBookings =
+                        item.href === "/admin/bookings" &&
+                        !!pendingBookingsCount &&
+                        pendingBookingsCount > 0;
+                      return (
+                        <SidebarMenuItem key={item.href}>
+                          <SidebarMenuButton
+                            href={item.href}
+                            isActive={pathname.startsWith(item.href)}
+                          >
+                            <item.icon />
+                            <span>{item.label}</span>
+                            {isPendingBookings && (
+                              <Badge
+                                variant="destructive"
+                                className="ml-auto h-5 min-w-5 px-1 text-xs"
+                              >
+                                {pendingBookingsCount}
+                              </Badge>
+                            )}
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>

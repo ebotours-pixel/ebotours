@@ -6,6 +6,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { useCurrency } from "@/hooks/use-currency";
+import { useLanguage } from "@/hooks/use-language";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ import { format } from "date-fns";
 import { type Tour, type UpsellItem } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, CheckCircle2, Zap, RefreshCw, Lock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getAgencySettings } from "@/lib/supabase/agency-content";
@@ -54,6 +55,7 @@ export default function CheckoutPage() {
   const { cartItems, getCartTotal, getDiscountAmount, getFinalTotal, promoCode } = useCart();
   const { format: formatPrice } = useCurrency();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [paymentConfig, setPaymentConfig] = useState<{
     cash: boolean;
     online: boolean;
@@ -208,20 +210,20 @@ export default function CheckoutPage() {
           <CardContent className="grid gap-8 p-8 md:grid-cols-2 md:p-10">
             <div className="space-y-4">
               <Badge variant="secondary" className="w-fit">
-                Checkout
+                {t("checkout.badge")}
               </Badge>
               <div className="space-y-2">
-                <h1 className="text-2xl font-semibold tracking-tight">Your cart is empty</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">{t("checkout.emptyCart")}</h1>
                 <p className="text-muted-foreground">
-                  Add a tour or service to your cart before placing an order.
+                  {t("checkout.emptyDesc")}
                 </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg">
-                  <Link href="/tours">Explore Tours</Link>
+                  <Link href="/tours">{t("checkout.exploreTours")}</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/cart">Back to Cart</Link>
+                  <Link href="/cart">{t("checkout.backToCart")}</Link>
                 </Button>
               </div>
             </div>
@@ -231,9 +233,9 @@ export default function CheckoutPage() {
                   <ShieldCheck className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-medium">Secure booking</p>
+                  <p className="font-medium">{t("checkout.secureBooking")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Your details are handled safely during checkout.
+                    {t("checkout.secureBookingDesc")}
                   </p>
                 </div>
               </div>
@@ -304,41 +306,41 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="space-y-3">
               <Badge variant="secondary" className="w-fit">
-                Checkout
+                {t("checkout.badge")}
               </Badge>
               <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-                Complete your booking
+                {t("checkout.title")}
               </h1>
               <p className="max-w-2xl text-base text-muted-foreground md:text-lg">
-                Enter your details, review your itinerary, and confirm your order.
+                {t("checkout.subtitle")}
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" variant="outline">
                 <Link href="/cart">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Cart
+                  {t("checkout.backToCart")}
                 </Link>
               </Button>
               <div className="flex items-center gap-2 rounded-2xl border bg-background/70 px-4 py-2">
                 <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Secure checkout</span>
+                <span className="text-sm text-muted-foreground">{t("checkout.secureCheckout")}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 1</p>
-              <p className="text-sm text-muted-foreground">Cart</p>
+              <p className="text-sm font-medium">{t("checkout.step1")}</p>
+              <p className="text-sm text-muted-foreground">{t("checkout.stateCart")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 2</p>
-              <p className="text-sm text-muted-foreground">Checkout</p>
+              <p className="text-sm font-medium">{t("checkout.step2")}</p>
+              <p className="text-sm text-muted-foreground">{t("checkout.stateCheckout")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 3</p>
-              <p className="text-sm text-muted-foreground">Confirmation</p>
+              <p className="text-sm font-medium">{t("checkout.step3")}</p>
+              <p className="text-sm text-muted-foreground">{t("checkout.stateConfirmation")}</p>
             </div>
           </div>
         </div>
@@ -350,8 +352,8 @@ export default function CheckoutPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
                 <CardHeader>
-                  <CardTitle>Customer Information</CardTitle>
-                  <CardDescription>Enter your details to complete the purchase.</CardDescription>
+                  <CardTitle>{t("checkout.customerInfo")}</CardTitle>
+                  <CardDescription>{t("checkout.customerInfoDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
                   <FormField
@@ -359,7 +361,7 @@ export default function CheckoutPage() {
                     name="name"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>{t("checkout.fullName")}</FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -372,7 +374,7 @@ export default function CheckoutPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-1">
-                        <FormLabel>Email Address</FormLabel>
+                        <FormLabel>{t("checkout.emailAddress")}</FormLabel>
                         <FormControl>
                           <Input placeholder="you@example.com" {...field} />
                         </FormControl>
@@ -385,7 +387,7 @@ export default function CheckoutPage() {
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-1">
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>{t("checkout.phoneNumber")}</FormLabel>
                         <FormControl>
                           <Input placeholder="+1 (555) 123-4567" {...field} />
                         </FormControl>
@@ -398,7 +400,7 @@ export default function CheckoutPage() {
                     name="nationality"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>Nationality</FormLabel>
+                        <FormLabel>{t("checkout.nationality")}</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., American, Egyptian" {...field} />
                         </FormControl>
@@ -411,7 +413,7 @@ export default function CheckoutPage() {
                     name="paymentMethod"
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2 space-y-3">
-                        <FormLabel>Payment Method</FormLabel>
+                        <FormLabel>{t("checkout.paymentMethod")}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             value={field.value}
@@ -425,9 +427,9 @@ export default function CheckoutPage() {
                               >
                                 <RadioGroupItem value="cash" id="payment-cash" />
                                 <div className="space-y-1">
-                                  <p className="text-sm font-medium leading-none">Cash</p>
+                                  <p className="text-sm font-medium leading-none">{t("checkout.cashLabel")}</p>
                                   <p className="text-sm text-muted-foreground">
-                                    Pay in cash on arrival.
+                                    {t("checkout.cashDesc")}
                                   </p>
                                 </div>
                               </label>
@@ -440,10 +442,10 @@ export default function CheckoutPage() {
                                 <RadioGroupItem value="online" id="payment-online" />
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium leading-none">
-                                    Online (Kashier)
+                                    {t("checkout.onlineLabel")}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    Pay online to confirm immediately.
+                                    {t("checkout.onlineDesc")}
                                   </p>
                                 </div>
                               </label>
@@ -465,10 +467,10 @@ export default function CheckoutPage() {
                     {form.formState.isSubmitting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Place Order
+                    {t("checkout.placeOrder")}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">
-                    By placing an order, you agree to receive booking details via email.
+                    {t("checkout.agreement")}
                   </p>
                 </CardFooter>
               </form>
@@ -479,7 +481,7 @@ export default function CheckoutPage() {
         <div className="space-y-6 lg:sticky lg:top-24">
           <Card className="overflow-hidden rounded-3xl border bg-card">
             <CardHeader>
-              <CardTitle>Order Summary</CardTitle>
+              <CardTitle>{t("checkout.orderSummary")}</CardTitle>
               <CardDescription>
                 {cartItems.length} item{cartItems.length === 1 ? "" : "s"}
               </CardDescription>
@@ -518,26 +520,74 @@ export default function CheckoutPage() {
 
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("checkout.subtotal")}</span>
                   <span className="font-medium">{formatPrice(getCartTotal())}</span>
                 </div>
                 {promoCode ? (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount ({promoCode.code})</span>
+                    <span>{t("checkout.discount")} ({promoCode.code})</span>
                     <span>-{formatPrice(getDiscountAmount())}</span>
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Taxes & fees</span>
-                  <span className="text-muted-foreground">Calculated at checkout</span>
+                  <span className="text-muted-foreground">{t("checkout.taxesFees")}</span>
+                  <span className="text-muted-foreground">{t("checkout.taxesCalc")}</span>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex items-center justify-between border-t pt-4 text-lg font-bold">
-              <span>Total</span>
+              <span>{t("checkout.total")}</span>
               <span>{formatPrice(getFinalTotal())}</span>
             </CardFooter>
           </Card>
+
+          {/* Trust badges */}
+          <div className="rounded-3xl border bg-card p-5 space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("checkout.whyBookWith")}
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/30">
+                  <Lock className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t("checkout.securePayment")}</p>
+                  <p className="text-xs text-muted-foreground">{t("checkout.securePaymentDesc")}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                  <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t("checkout.verifiedAgency")}</p>
+                  <p className="text-xs text-muted-foreground">{t("checkout.verifiedAgencyDesc")}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-yellow-100 dark:bg-yellow-900/30">
+                  <Zap className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t("checkout.instantConfirm")}</p>
+                  <p className="text-xs text-muted-foreground">{t("checkout.instantConfirmDesc")}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/30">
+                  <RefreshCw className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t("checkout.flexibleBooking")}</p>
+                  <p className="text-xs text-muted-foreground">{t("checkout.flexibleBookingDesc")}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

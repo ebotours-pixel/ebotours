@@ -29,7 +29,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { PlusCircle, Trash2, Layout, Image as ImageIcon, MapPin, Tag, Video, Newspaper, MessageSquare, Eye, Save } from "lucide-react";
+import { PlusCircle, Trash2, Layout, Image as ImageIcon, MapPin, Tag, Video, Newspaper, MessageSquare, Eye, Save, Sparkles, ShieldCheck, Gift, Zap, RefreshCw, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -55,6 +55,8 @@ const defaultHomePageData = {
     subtitle: "",
     imageUrl: "",
     imageAlt: "",
+    searchType: "tours",
+    videoUrl: "",
   },
   whyChooseUs: {
     pretitle: "",
@@ -124,6 +126,61 @@ const defaultHomePageData = {
     title: "",
     count: 0,
   },
+  // Hotel Defaults
+  hotelFeatures: {
+    title: "",
+    subtitle: "",
+    features: [],
+  },
+  featuredRooms: {
+    title: "",
+    subtitle: "",
+    roomIds: [],
+  },
+  hotelStory: {
+    title: "",
+    description: "",
+    imageUrl: "",
+    imageAlt: "",
+    buttonText: "",
+    buttonLink: "",
+  },
+  // H2 Hotel Sections
+  amenitiesSection: {
+    title: "",
+    subtitle: "",
+    items: ["wifi", "pool", "spa", "restaurant", "gym", "parking"],
+  },
+  gallerySection: {
+    title: "",
+    subtitle: "",
+    images: [],
+  },
+  whyBookDirect: {
+    title: "",
+    subtitle: "",
+    benefits: [
+      { icon: "ShieldCheck", title: "Best Price Guarantee", description: "We match any price you find elsewhere." },
+      { icon: "RefreshCw", title: "Free Cancellation", description: "Cancel up to 24h before check-in for free." },
+      { icon: "Zap", title: "Instant Confirmation", description: "Your booking is confirmed immediately." },
+      { icon: "Gift", title: "Exclusive Perks", description: "Complimentary upgrades & welcome gifts for direct guests." },
+    ],
+  },
+  locationSection: {
+    title: "",
+    subtitle: "",
+    address: "",
+    mapEmbedUrl: "",
+    directionsUrl: "",
+  },
+  socialSection: {
+    title: "",
+    subtitle: "",
+    handle: "",
+    profileUrl: "",
+    platform: "Instagram",
+    images: [],
+  },
   visibility: {
     hero: true,
     browseCategory: true,
@@ -134,6 +191,12 @@ const defaultHomePageData = {
     testimonials: true,
     videoSection: true,
     newsSection: true,
+    roomsSection: true,
+    amenitiesSection: true,
+    gallerySection: true,
+    whyBookDirect: true,
+    locationSection: true,
+    socialSection: true,
   },
 };
 
@@ -167,6 +230,9 @@ const formSchema = z.object({
     subtitle: z.string().min(1, "Hero subtitle is required"),
     image: z.array(fileSchema).optional(),
     imageAlt: z.string().optional(),
+    searchType: z.enum(["tours", "hotels"]).optional().default("tours"),
+    bookDirectBadge: z.string().optional(),
+    videoUrl: z.string().optional(),
   }),
   whyChooseUs: z.object({
     pretitle: z.string().min(1, "Pre-title is required"),
@@ -237,6 +303,15 @@ const formSchema = z.object({
     testimonials: z.boolean().default(true),
     videoSection: z.boolean().default(true),
     newsSection: z.boolean().default(true),
+    hotelFeatures: z.boolean().default(true).optional(),
+    featuredRooms: z.boolean().default(true).optional(),
+    hotelStory: z.boolean().default(true).optional(),
+    roomsSection: z.boolean().default(true).optional(),
+    amenitiesSection: z.boolean().default(true).optional(),
+    gallerySection: z.boolean().default(true).optional(),
+    whyBookDirect: z.boolean().default(true).optional(),
+    locationSection: z.boolean().default(true).optional(),
+    socialSection: z.boolean().default(true).optional(),
   }),
 });
 
@@ -289,6 +364,38 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
           ...defaultHomePageData.newsSection,
           ...initialContent.newsSection,
       },
+      hotelFeatures: {
+          ...defaultHomePageData.hotelFeatures,
+          ...initialContent.hotelFeatures,
+      },
+      featuredRooms: {
+          ...defaultHomePageData.featuredRooms,
+          ...initialContent.featuredRooms,
+      },
+      hotelStory: {
+          ...defaultHomePageData.hotelStory,
+          ...initialContent.hotelStory,
+      },
+      amenitiesSection: {
+          ...defaultHomePageData.amenitiesSection,
+          ...initialContent.amenitiesSection,
+      },
+      gallerySection: {
+          ...defaultHomePageData.gallerySection,
+          ...initialContent.gallerySection,
+      },
+      whyBookDirect: {
+          ...defaultHomePageData.whyBookDirect,
+          ...initialContent.whyBookDirect,
+      },
+      locationSection: {
+          ...defaultHomePageData.locationSection,
+          ...initialContent.locationSection,
+      },
+      socialSection: {
+          ...defaultHomePageData.socialSection,
+          ...initialContent.socialSection,
+      },
       visibility: {
           ...defaultHomePageData.visibility,
           ...initialContent.visibility,
@@ -317,11 +424,13 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
   const [existingBanner2Url] = useState<string | null>(initialContent?.discountBanners?.banner2?.imageUrl || null);
   const [existingVideoBgUrl] = useState<string | null>(initialContent?.videoSection?.backgroundImageUrl || null);
   const [existingWhyChooseUsUrl] = useState<string | null>(initialContent?.whyChooseUs?.imageUrl || null);
+  const [existingGalleryImages, setExistingGalleryImages] = useState<(File | string)[]>(initialContent?.gallerySection?.images || []);
+  const [existingSocialImages, setExistingSocialImages] = useState<(File | string)[]>(initialContent?.socialSection?.images || []);
   const [activeTab, setActiveTab] = useState("visibility");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: mergedValues,
+    defaultValues: mergedValues as any,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -379,6 +488,22 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
     const newBanner2Url = await handleImageUpload(banner2File, "banner2");
     const newVideoBgUrl = await handleImageUpload(videoBgFile, "video-bg");
 
+    // Gallery images — upload any File objects, keep existing URLs
+    const galleryStringUrls = existingGalleryImages.filter((f): f is string => typeof f === "string");
+    const galleryFileObjects = existingGalleryImages.filter((f): f is File => f instanceof File);
+    const uploadedGalleryUrls = (
+      await Promise.all(galleryFileObjects.map((f, i) => handleImageUpload(f, `gallery-${i}`)))
+    ).filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+    const allGalleryUrls = [...galleryStringUrls, ...uploadedGalleryUrls];
+
+    // Social images
+    const socialStringUrls = existingSocialImages.filter((f): f is string => typeof f === "string");
+    const socialFileObjects = existingSocialImages.filter((f): f is File => f instanceof File);
+    const uploadedSocialUrls = (
+      await Promise.all(socialFileObjects.map((f, i) => handleImageUpload(f, `social-${i}`)))
+    ).filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+    const allSocialUrls = [...socialStringUrls, ...uploadedSocialUrls];
+
     const seenHeroUrls = new Set<string>();
     const nextHeroUrls = [...existingHeroUrls, ...uploadedHeroUrls].filter((url) => {
       const normalized = typeof url === "string" ? url.trim() : "";
@@ -417,6 +542,9 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
         imageUrl: heroUrl,
         imageUrls: nextHeroUrls,
         imageAlt: values.hero.imageAlt,
+        searchType: values.hero.searchType,
+        bookDirectBadge: values.hero.bookDirectBadge || undefined,
+        videoUrl: (values.hero as any).videoUrl || undefined,
       },
       whyChooseUs: {
         pretitle: values.whyChooseUs.pretitle,
@@ -453,6 +581,21 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
           button1Link: values.videoSection.button1Link,
           button2Text: values.videoSection.button2Text,
           button2Link: values.videoSection.button2Link,
+      },
+      // Pass through hotel specific data
+      hotelFeatures: (values as any).hotelFeatures,
+      featuredRooms: (values as any).featuredRooms,
+      hotelStory: (values as any).hotelStory,
+      amenitiesSection: (values as any).amenitiesSection,
+      gallerySection: {
+        ...((values as any).gallerySection || {}),
+        images: allGalleryUrls,
+      },
+      whyBookDirect: (values as any).whyBookDirect,
+      locationSection: (values as any).locationSection,
+      socialSection: {
+        ...((values as any).socialSection || {}),
+        images: allSocialUrls,
       },
     };
 
@@ -541,6 +684,27 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
               <TabsTrigger value="testimonials" className="w-full justify-start gap-2">
                 <MessageSquare className="h-4 w-4" /> Testimonials
               </TabsTrigger>
+              <TabsTrigger value="hotel-features" className="w-full justify-start gap-2">
+                <Layout className="h-4 w-4" /> Hotel Features
+              </TabsTrigger>
+              <TabsTrigger value="hotel-story" className="w-full justify-start gap-2">
+                <Layout className="h-4 w-4" /> Hotel Story
+              </TabsTrigger>
+              <TabsTrigger value="amenities" className="w-full justify-start gap-2">
+                <Sparkles className="h-4 w-4" /> Amenities
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="w-full justify-start gap-2">
+                <ImageIcon className="h-4 w-4" /> Photo Gallery
+              </TabsTrigger>
+              <TabsTrigger value="why-book-direct" className="w-full justify-start gap-2">
+                <ShieldCheck className="h-4 w-4" /> Why Book Direct
+              </TabsTrigger>
+              <TabsTrigger value="location" className="w-full justify-start gap-2">
+                <MapPin className="h-4 w-4" /> Location
+              </TabsTrigger>
+              <TabsTrigger value="social" className="w-full justify-start gap-2">
+                <Sparkles className="h-4 w-4" /> Social Feed
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -555,7 +719,34 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                     <CardDescription>Toggle sections on or off to customize your home page layout.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.keys(defaultHomePageData.visibility).map((key) => (
+                    {Object.keys(defaultHomePageData.visibility).map((key) => {
+                      // Skip hotel sections if not in single hotel mode - simplified check for now
+                      if (['hotelFeatures', 'featuredRooms', 'hotelStory', 'roomsSection', 'amenitiesSection', 'gallerySection', 'whyBookDirect', 'locationSection', 'socialSection'].includes(key)) {
+                         return (
+                            <FormField
+                              key={key}
+                              control={form.control}
+                              name={`visibility.${key}` as any}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/50">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base capitalize">
+                                      {key.replace(/([A-Z])/g, " $1").trim()} (Hotel Mode)
+                                    </FormLabel>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                         );
+                      }
+
+                      return (
                       <FormField
                         key={key}
                         control={form.control}
@@ -576,7 +767,7 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                           </FormItem>
                         )}
                       />
-                    ))}
+                    )})}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -642,6 +833,30 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                     />
                     <FormField
                       control={form.control}
+                      name="hero.searchType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Search Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select search type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="tours">Tours Search</SelectItem>
+                              <SelectItem value="hotels">Hotels Search</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Choose which search bar to display in the hero section.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
                       name="hero.title"
                       render={({ field }) => (
                         <FormItem>
@@ -668,6 +883,22 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                     />
                     <FormField
                       control={form.control}
+                      name={"hero.videoUrl" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Background Video URL <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="https://example.com/hero-video.mp4" />
+                          </FormControl>
+                          <FormDescription>
+                            Direct link to an .mp4 file. When set, plays as a looping silent background instead of the image slider. Host on Cloudinary, S3, or similar.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
                       name="hero.imageAlt"
                       render={({ field }) => (
                         <FormItem>
@@ -675,6 +906,22 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={"hero.bookDirectBadge" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>"Book Direct" Badge Text (Hotel Mode)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. Book Direct & Save Up to 15%" />
+                          </FormControl>
+                          <FormDescription>
+                            Shown below the search widget in hotel mode. Leave blank to hide.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -807,6 +1054,565 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Hotel Features Tab */}
+              <TabsContent value="hotel-features" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hotel Features</CardTitle>
+                    <CardDescription>
+                      Highlight your hotel amenities and services.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <FormField
+                      control={form.control}
+                      name={"hotelFeatures.title" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Section Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. World Class Amenities" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={"hotelFeatures.subtitle" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Section Subtitle</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={2} placeholder="Brief description of your amenities" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Features List</h4>
+                         <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const currentFeatures = form.getValues("hotelFeatures.features" as any) || [];
+                            form.setValue("hotelFeatures.features" as any, [
+                              ...currentFeatures,
+                              { title: "New Feature", description: "Description", icon: "wifi" }
+                            ] as any);
+                          }}
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" /> Add Feature
+                        </Button>
+                      </div>
+                      <div className="grid gap-4">
+                        {(form.watch("hotelFeatures.features" as any) || []).map((feature: any, index: number) => (
+                          <div key={index} className="flex gap-4 items-start border p-4 rounded-lg bg-card relative group">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                              <FormField
+                                control={form.control}
+                                name={`hotelFeatures.features.${index}.title` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Title</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`hotelFeatures.features.${index}.description` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Description</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`hotelFeatures.features.${index}.icon` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Icon (Lucide Name)</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="e.g. wifi, coffee, pool" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute top-2 right-2 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => {
+                                const currentFeatures = form.getValues("hotelFeatures.features" as any) || [];
+                                form.setValue("hotelFeatures.features" as any, currentFeatures.filter((_: any, i: number) => i !== index) as any);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Hotel Story Tab */}
+              <TabsContent value="hotel-story" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hotel Story</CardTitle>
+                    <CardDescription>
+                      Share your hotel&apos;s story or welcome message.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <FormField
+                      control={form.control}
+                      name={"hotelStory.title" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. A Sanctuary in the City" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={"hotelStory.description" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={6} placeholder="Tell your story..." />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"hotelStory.buttonText" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Button Text</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g. Read More" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"hotelStory.buttonLink" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Button Link</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="e.g. /about" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FormLabel>Story Image</FormLabel>
+                      <ImageUploader
+                        value={form.watch("hotelStory.imageUrl" as any) ? [form.watch("hotelStory.imageUrl" as any) as string] : []}
+                        onChange={(urls) => form.setValue("hotelStory.imageUrl" as any, urls[0] || "")}
+                        maxFiles={1}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ─── H2.4 Amenities Tab ─── */}
+              <TabsContent value="amenities" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Amenities Showcase</CardTitle>
+                    <CardDescription>Select which hotel amenities to display on the home page.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"amenitiesSection.title" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Our Amenities" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"amenitiesSection.subtitle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. What We Offer" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <Separator />
+                    <div>
+                      <FormLabel className="text-base mb-3 block">Select Amenities to Display</FormLabel>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {[
+                          { id: "wifi", label: "Free WiFi" },
+                          { id: "pool", label: "Swimming Pool" },
+                          { id: "spa", label: "Spa & Wellness" },
+                          { id: "restaurant", label: "Restaurant" },
+                          { id: "gym", label: "Fitness Center" },
+                          { id: "parking", label: "Free Parking" },
+                          { id: "bar", label: "Bar & Lounge" },
+                          { id: "shuttle", label: "Airport Shuttle" },
+                          { id: "roomService", label: "Room Service" },
+                          { id: "pets", label: "Pet Friendly" },
+                          { id: "kids", label: "Kids Club" },
+                          { id: "meetings", label: "Meeting Rooms" },
+                          { id: "ac", label: "Air Conditioning" },
+                          { id: "beach", label: "Beach Access" },
+                          { id: "laundry", label: "Laundry" },
+                          { id: "concierge", label: "Concierge" },
+                        ].map((amenity) => {
+                          const currentItems: string[] = form.watch("amenitiesSection.items" as any) || [];
+                          const isActive = currentItems.includes(amenity.id);
+                          return (
+                            <div
+                              key={amenity.id}
+                              className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-colors ${isActive ? "bg-primary/5 border-primary/40" : "hover:bg-muted/50"}`}
+                              onClick={() => {
+                                const next = isActive
+                                  ? currentItems.filter((i) => i !== amenity.id)
+                                  : [...currentItems, amenity.id];
+                                form.setValue("amenitiesSection.items" as any, next);
+                              }}
+                            >
+                              <span className="text-sm font-medium">{amenity.label}</span>
+                              <Switch checked={isActive} onCheckedChange={() => {}} tabIndex={-1} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ─── H2.5 Gallery Tab ─── */}
+              <TabsContent value="gallery" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Photo Gallery</CardTitle>
+                    <CardDescription>Upload hotel photos for the home page gallery with lightbox.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"gallerySection.title" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Our Hotel in Photos" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"gallerySection.subtitle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Gallery" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <FormLabel>Gallery Photos</FormLabel>
+                      <ImageUploader
+                        value={existingGalleryImages}
+                        onChange={(files) => setExistingGalleryImages(files)}
+                        maxFiles={20}
+                      />
+                      <p className="text-xs text-muted-foreground">Upload up to 20 photos. Guests can click to enlarge.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ─── H2.6 Why Book Direct Tab ─── */}
+              <TabsContent value="why-book-direct" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Why Book Direct</CardTitle>
+                    <CardDescription>4 benefit cards that persuade guests to book directly.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"whyBookDirect.title" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Why Book Direct?" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"whyBookDirect.subtitle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Direct Booking Benefits" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <Separator />
+                    {[0, 1, 2, 3].map((idx) => (
+                      <Card key={idx} className="bg-muted/30">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Benefit {idx + 1}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`whyBookDirect.benefits.${idx}.icon` as any}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">Icon</FormLabel>
+                                  <FormControl><Input {...field} placeholder="ShieldCheck" /></FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <div className="md:col-span-2">
+                              <FormField
+                                control={form.control}
+                                name={`whyBookDirect.benefits.${idx}.title` as any}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Title</FormLabel>
+                                    <FormControl><Input {...field} placeholder="e.g. Best Price Guarantee" /></FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                          <FormField
+                            control={form.control}
+                            name={`whyBookDirect.benefits.${idx}.description` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Description</FormLabel>
+                                <FormControl><Textarea {...field} rows={2} placeholder="Short benefit description..." /></FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ─── H2.7 Location Tab ─── */}
+              <TabsContent value="location" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Location & Map</CardTitle>
+                    <CardDescription>Show the hotel location with an embedded map on the home page.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"locationSection.title" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Find Us" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"locationSection.subtitle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Our Location" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name={"locationSection.address" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={2} placeholder="123 Beach Road, Sharm El-Sheikh, Egypt" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={"locationSection.mapEmbedUrl" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Google Maps Embed URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="https://www.google.com/maps/embed?pb=..." />
+                          </FormControl>
+                          <FormDescription>
+                            In Google Maps: Share → Embed a map → copy the <code>src</code> URL from the &lt;iframe&gt;.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={"locationSection.directionsUrl" as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>&quot;Get Directions&quot; Link</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="https://maps.google.com/?q=..." />
+                          </FormControl>
+                          <FormDescription>Regular Google Maps link for the &quot;Get Directions&quot; button.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* ─── H2.8 Social Feed Tab ─── */}
+              <TabsContent value="social" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Social Media Feed</CardTitle>
+                    <CardDescription>A &quot;Follow Us&quot; photo grid with your social handle and link.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"socialSection.title" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Section Title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Follow Our Journey" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"socialSection.subtitle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pre-title</FormLabel>
+                            <FormControl><Input {...field} placeholder="e.g. Instagram" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={"socialSection.platform" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Platform</FormLabel>
+                            <FormControl><Input {...field} placeholder="Instagram" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"socialSection.handle" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Handle</FormLabel>
+                            <FormControl><Input {...field} placeholder="@myhotel" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={"socialSection.profileUrl" as any}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Profile Link</FormLabel>
+                            <FormControl><Input {...field} placeholder="https://instagram.com/myhotel" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <FormLabel>Feed Photos</FormLabel>
+                      <ImageUploader
+                        value={existingSocialImages}
+                        onChange={(files) => setExistingSocialImages(files)}
+                        maxFiles={9}
+                      />
+                      <p className="text-xs text-muted-foreground">Upload up to 9 square photos to simulate an Instagram feed grid.</p>
                     </div>
                   </CardContent>
                 </Card>

@@ -8,10 +8,13 @@ import {
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import { OverviewChart } from "@/components/admin/overview-chart";
 import { RecentSales } from "@/components/admin/recent-sales";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { PeriodSelector } from "@/components/admin/period-selector";
+import { GettingStarted } from "@/components/admin/getting-started";
 import { getBookings } from "@/lib/supabase/bookings";
 import { getCustomers } from "@/lib/supabase/customers";
 import { getTours } from "@/lib/supabase/tours";
+import { getCurrentAgency } from "@/lib/supabase/agencies";
+import { Suspense } from "react";
 
 function formatUSD(value: number) {
   try {
@@ -25,49 +28,164 @@ function formatUSD(value: number) {
   }
 }
 
-function getLast12MonthsLabels(): string[] {
-  const labels: string[] = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    labels.push(d.toLocaleString("en-US", { month: "short" }));
-  }
-  return labels;
+function getPeriodDays(period: string): number | null {
+  if (period === "7") return 7;
+  if (period === "90") return 90;
+  if (period === "all") return null;
+  return 30; // default
 }
 
-export default async function AdminDashboard() {
-  // Fetch live data (with fallbacks handled in the supabase libs)
-  const [bookings, customers, tours] = await Promise.all([
+function buildChartData(
+  bookings: Awaited<ReturnType<typeof getBookings>>,
+  days: number | null
+): { name: string; total: number }[] {
+  if (days === null) {
+    // All-time: last 12 months grouped by month
+    const now = new Date();
+    const labels: string[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels.push(d.toLocaleString("en-US", { month: "short", year: "2-digit" }));
+    }
+    const totals: Record<string, number> = Object.fromEntries(labels.map((l) => [l, 0]));
+    for (const b of bookings) {
+      const d = b.bookingDate ? new Date(b.bookingDate) : new Date();
+      const label = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+      if (totals[label] !== undefined) totals[label] += b.totalPrice ?? 0;
+    }
+    return labels.map((l) => ({ name: l, total: totals[l] }));
+  }
+
+  // Daily data for the selected period
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days + 1);
+  startDate.setHours(0, 0, 0, 0);
+
+  const points: { date: Date; label: string }[] = [];
+  for (const cur = new Date(startDate); cur <= today; cur.setDate(cur.getDate() + 1)) {
+    const label =
+      days <= 7
+        ? cur.toLocaleString("en-US", { weekday: "short" })
+        : cur.toLocaleString("en-US", { month: "short", day: "numeric" });
+    points.push({ date: new Date(cur), label });
+  }
+
+  const totals: Record<string, number> = Object.fromEntries(points.map((p) => [p.label, 0]));
+  const dateToLabel: Record<string, string> = {};
+  for (const p of points) dateToLabel[p.date.toDateString()] = p.label;
+
+  for (const b of bookings) {
+    const d = b.bookingDate ? new Date(b.bookingDate) : new Date();
+    if (d >= startDate && d <= today) {
+      const label = dateToLabel[d.toDateString()];
+      if (label !== undefined) totals[label] += b.totalPrice ?? 0;
+    }
+  }
+
+  return points.map((p) => ({ name: p.label, total: totals[p.label] }));
+}
+
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: periodParam } = await searchParams;
+  const period = periodParam ?? "30";
+  const periodDays = getPeriodDays(period);
+
+  const [allBookings, customers, tours, agency] = await Promise.all([
     getBookings(),
     getCustomers(),
     getTours(),
+    getCurrentAgency(),
   ]);
 
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
-  const totalBookings = bookings.length;
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Filter bookings by period
+  const now = new Date();
+  const periodBookings =
+    periodDays === null
+      ? allBookings
+      : allBookings.filter((b) => {
+          const d = b.bookingDate ? new Date(b.bookingDate) : new Date();
+          const cutoff = new Date(now);
+          cutoff.setDate(cutoff.getDate() - periodDays);
+          return d >= cutoff;
+        });
+
+  const totalRevenue = periodBookings.reduce((sum, b) => sum + (b.totalPrice ?? 0), 0);
+  const totalBookings = periodBookings.length;
+
   const newCustomers = customers.filter((c) => {
+    if (periodDays === null) return true;
     const created = c.createdAt ? new Date(c.createdAt) : new Date();
-    return created >= thirtyDaysAgo;
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - periodDays);
+    return created >= cutoff;
   }).length;
+
   const activeTours = tours.filter((t) => t.availability).length;
+  const chartData = buildChartData(allBookings, periodDays);
 
-  // Build monthly revenue series for the chart
-  const labels = getLast12MonthsLabels();
-  const monthlyTotals: Record<string, number> = Object.fromEntries(
-    labels.map((l) => [l, 0]),
-  );
-  bookings.forEach((b) => {
-    const d = b.bookingDate ? new Date(b.bookingDate) : new Date();
-    const label = d.toLocaleString("en-US", { month: "short" });
-    if (monthlyTotals[label] !== undefined) {
-      monthlyTotals[label] += b.totalPrice ?? 0;
-    }
-  });
-  const chartData = labels.map((l) => ({ name: l, total: monthlyTotals[l] }));
+  // Onboarding state
+  const onboardingDismissed = !!agency?.settings?.onboarding_dismissed;
+  const onboardingSteps = [
+    {
+      id: "logo",
+      label: "Upload your logo",
+      description: "Brand your agency with a custom logo",
+      href: "/admin/settings",
+      completed: !!agency?.settings?.theme?.logoUrl,
+    },
+    {
+      id: "contact",
+      label: "Configure contact info",
+      description: "Add your email, phone, and address",
+      href: "/admin/settings",
+      completed: !!(
+        agency?.settings?.contact?.email ||
+        agency?.settings?.contact?.phone
+      ),
+    },
+    {
+      id: "tour",
+      label: "Create your first tour",
+      description: "Add a tour or hotel for customers to book",
+      href: "/admin/tours",
+      completed: tours.length > 0,
+    },
+    {
+      id: "homepage",
+      label: "Set up your homepage",
+      description: "Customise the hero section and visuals",
+      href: "/admin/home-page-editor",
+      completed: !!(
+        agency?.settings?.theme?.primaryColor ||
+        agency?.settings?.social?.facebook ||
+        agency?.settings?.social?.instagram
+      ),
+    },
+    {
+      id: "booking",
+      label: "Receive your first booking",
+      description: "Share your site and start taking orders",
+      href: "/admin/bookings",
+      completed: allBookings.length > 0,
+    },
+  ];
+  const showOnboarding =
+    !onboardingDismissed &&
+    !onboardingSteps.every((s) => s.completed);
 
-  const recentItems = bookings.slice(0, 5).map((b) => ({
+  const periodLabel =
+    period === "7" ? "last 7 days" :
+    period === "90" ? "last 90 days" :
+    period === "all" ? "all time" :
+    "last 30 days";
+
+  const recentItems = periodBookings.slice(0, 5).map((b) => ({
     user: b.customerName ?? b.customerEmail ?? "Customer",
     email: b.customerEmail ?? "",
     amount: `+${formatUSD(b.totalPrice ?? 0)}`,
@@ -76,17 +194,19 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <div className="w-full sm:w-auto">
-            {/* DateRangePicker requires props, using defaults for now */}
-            <DateRangePicker 
-                date={{ from: new Date(new Date().setDate(new Date().getDate() - 30)), to: new Date() }}
-            />
-          </div>
+      {showOnboarding && (
+        <GettingStarted steps={onboardingSteps} />
+      )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground capitalize">Showing stats for {periodLabel}</p>
         </div>
+        <Suspense fallback={null}>
+          <PeriodSelector currentPeriod={period} />
+        </Suspense>
       </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -95,19 +215,17 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatUSD(totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">Live from bookings</p>
+            <p className="text-xs text-muted-foreground capitalize">{periodLabel}</p>
           </CardContent>
         </Card>
         <Card className="rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Bookings
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalBookings}</div>
-            <p className="text-xs text-muted-foreground">Booked experiences</p>
+            <p className="text-xs text-muted-foreground capitalize">{periodLabel}</p>
           </CardContent>
         </Card>
         <Card className="rounded-lg shadow-sm">
@@ -117,7 +235,7 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{newCustomers}</div>
-            <p className="text-xs text-muted-foreground">Joined in last 30 days</p>
+            <p className="text-xs text-muted-foreground capitalize">{periodLabel}</p>
           </CardContent>
         </Card>
         <Card className="rounded-lg shadow-sm">
@@ -135,7 +253,8 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
         <Card className="lg:col-span-4 rounded-lg shadow-sm">
           <CardHeader>
-            <CardTitle>Overview</CardTitle>
+            <CardTitle>Revenue Trend</CardTitle>
+            <CardDescription className="capitalize">{periodLabel}</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <OverviewChart data={chartData} />
@@ -143,8 +262,8 @@ export default async function AdminDashboard() {
         </Card>
         <Card className="lg:col-span-3 rounded-lg shadow-sm">
           <CardHeader>
-            <CardTitle>Recent Sales</CardTitle>
-            <CardDescription>Latest bookings</CardDescription>
+            <CardTitle>Recent Bookings</CardTitle>
+            <CardDescription className="capitalize">{periodLabel}</CardDescription>
           </CardHeader>
           <CardContent>
             <RecentSales items={recentItems} />

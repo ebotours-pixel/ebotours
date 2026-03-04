@@ -1,6 +1,7 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { getAgencySettings } from "@/lib/supabase/agency-content";
+import { WhatsAppChatButton } from "@/components/whatsapp-chat-button";
 
 function hexToHsl(hex: string) {
   let c = hex.substring(1).split("");
@@ -46,6 +47,7 @@ export default async function MainLayout({
 }>) {
   const settings = await getAgencySettings();
   const theme = settings?.data?.theme;
+  const phoneNumber = settings?.data?.phoneNumber;
 
   const primaryHsl = theme?.primaryColor ? hexToHsl(theme.primaryColor) : null;
   const fontFamily = theme?.fontFamily;
@@ -59,8 +61,9 @@ export default async function MainLayout({
         }
       `}</style>
       <Header />
-      <main className="flex-grow container mx-auto px-4 py-8">{children}</main>
+      <main className="flex-grow container mx-auto px-4 pt-[84px] md:pt-[134px] pb-8">{children}</main>
       <Footer />
+      {phoneNumber && <WhatsAppChatButton phone={phoneNumber} />}
     </div>
   );
 }

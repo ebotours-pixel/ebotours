@@ -4,17 +4,19 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle2, Compass, Loader2, Ticket, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Compass, Download, Loader2, Ticket, XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getBookingById } from "@/lib/supabase/bookings";
 import { useCart } from "@/hooks/use-cart";
+import { useLanguage } from "@/hooks/use-language";
 
 type PaymentState = "checking" | "confirmed" | "cancelled" | "pending" | "unknown";
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
+  const { t } = useLanguage();
   const [paymentState, setPaymentState] = useState<PaymentState>("checking");
 
   const merchantOrderId = useMemo(() => {
@@ -75,21 +77,21 @@ export default function CheckoutSuccessPage() {
 
   const heroTitle =
     paymentState === "confirmed"
-      ? "Booking confirmed"
+      ? t("success.confirmed")
       : paymentState === "cancelled"
-        ? "Payment failed"
+        ? t("success.failed")
         : paymentState === "pending"
-          ? "Confirming payment"
-          : "Checkout complete";
+          ? t("success.pending")
+          : t("success.complete");
 
   const heroSubtitle =
     paymentState === "confirmed"
-      ? "Thanks for your booking. A confirmation email is on its way."
+      ? t("success.confirmedDesc")
       : paymentState === "cancelled"
-        ? "Your payment was not completed. You can try again from the cart."
+        ? t("success.failedDesc")
         : paymentState === "pending"
-          ? "We’re waiting for payment confirmation from Kashier."
-          : "If you completed payment, confirmation will appear shortly.";
+          ? t("success.pendingDesc")
+          : t("success.completeDesc");
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 py-10">
@@ -99,7 +101,7 @@ export default function CheckoutSuccessPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="space-y-3">
               <Badge variant="secondary" className="w-fit">
-                Confirmation
+                {t("success.badge")}
               </Badge>
               <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground md:text-5xl">
                 {heroTitle}
@@ -111,27 +113,27 @@ export default function CheckoutSuccessPage() {
             <div className="grid w-full gap-3 sm:max-w-md sm:grid-cols-2">
               <Button asChild size="lg">
                 <Link href="/tours">
-                  Browse Tours <ArrowRight className="ml-2 h-4 w-4" />
+                  {t("success.browseTours")} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/destination">Explore Destinations</Link>
+                <Link href="/destination">{t("success.exploreDestinations")}</Link>
               </Button>
             </div>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 1</p>
-              <p className="text-sm text-muted-foreground">Cart</p>
+              <p className="text-sm font-medium">{t("success.step1")}</p>
+              <p className="text-sm text-muted-foreground">{t("success.stateCart")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 2</p>
-              <p className="text-sm text-muted-foreground">Checkout</p>
+              <p className="text-sm font-medium">{t("success.step2")}</p>
+              <p className="text-sm text-muted-foreground">{t("success.stateCheckout")}</p>
             </div>
             <div className="rounded-2xl border bg-background/70 p-4">
-              <p className="text-sm font-medium">Step 3</p>
-              <p className="text-sm text-muted-foreground">Confirmation</p>
+              <p className="text-sm font-medium">{t("success.step3")}</p>
+              <p className="text-sm text-muted-foreground">{t("success.stateConfirmation")}</p>
             </div>
           </div>
         </div>
@@ -156,10 +158,10 @@ export default function CheckoutSuccessPage() {
             <div className="space-y-0.5">
               <CardTitle className="text-2xl">
                 {paymentState === "confirmed"
-                  ? "Payment Confirmed!"
+                  ? t("success.paymentConfirmed")
                   : paymentState === "cancelled"
-                    ? "Payment Not Completed"
-                    : "Processing Payment"}
+                    ? t("success.paymentNotCompleted")
+                    : t("success.processingPayment")}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 {merchantOrderId ? `Booking ID: ${merchantOrderId}` : "Return to the cart if needed."}
@@ -174,8 +176,8 @@ export default function CheckoutSuccessPage() {
                 <Ticket className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium">Booking details</p>
-                <p className="text-sm text-muted-foreground">Sent to your email</p>
+                <p className="font-medium">{t("success.bookingDetails")}</p>
+                <p className="text-sm text-muted-foreground">{t("success.bookingDetailsSub")}</p>
               </div>
             </div>
           </div>
@@ -185,8 +187,8 @@ export default function CheckoutSuccessPage() {
                 <Compass className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium">Next ideas</p>
-                <p className="text-sm text-muted-foreground">Add another tour or add-on</p>
+                <p className="font-medium">{t("success.nextIdeas")}</p>
+                <p className="text-sm text-muted-foreground">{t("success.nextIdeasSub")}</p>
               </div>
             </div>
           </div>
@@ -196,8 +198,8 @@ export default function CheckoutSuccessPage() {
                 <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium">Need help?</p>
-                <p className="text-sm text-muted-foreground">Contact us any time</p>
+                <p className="font-medium">{t("success.needHelp")}</p>
+                <p className="text-sm text-muted-foreground">{t("success.needHelpSub")}</p>
               </div>
             </div>
           </div>
@@ -205,17 +207,26 @@ export default function CheckoutSuccessPage() {
         <CardFooter className="flex flex-col gap-3 border-t bg-muted/20 sm:flex-row sm:justify-between">
           {paymentState === "cancelled" ? (
             <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-              <Link href="/cart">Back to Cart</Link>
+              <Link href="/cart">{t("success.backToCart")}</Link>
             </Button>
           ) : (
             <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-              <Link href="/contact">Contact Support</Link>
+              <Link href="/contact">{t("success.contactSupport")}</Link>
+            </Button>
+          )}
+
+          {paymentState === "confirmed" && merchantOrderId && (
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+              <a href={`/api/bookings/${merchantOrderId}/voucher`} download>
+                <Download className="mr-2 h-4 w-4" />
+                {t("success.downloadVoucher")}
+              </a>
             </Button>
           )}
 
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/">
-              Continue Exploring <ArrowRight className="ml-2 h-4 w-4" />
+              {t("success.continueExploring")} <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </CardFooter>
