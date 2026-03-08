@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { Fragment, useState, useTransition } from 'react';
 import {
   Table,
   TableBody,
@@ -224,8 +224,8 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
               const isExpanded = expandedId === agency.id;
 
               return (
-                <>
-                  <TableRow key={agency.id}>
+                <Fragment key={agency.id}>
+                  <TableRow>
                     <TableCell className="w-8 px-2">
                       <Button
                         variant="ghost"
@@ -461,7 +461,7 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
 
                   {/* Expandable Quick Stats Row */}
                   {isExpanded && (
-                    <TableRow key={`${agency.id}-stats`} className="bg-zinc-50/50">
+                    <TableRow className="bg-zinc-50/50">
                       <TableCell colSpan={9} className="py-3 px-6">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
@@ -500,7 +500,7 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </TableBody>

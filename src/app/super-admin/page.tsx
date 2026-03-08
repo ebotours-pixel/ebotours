@@ -9,6 +9,7 @@ import { AgencyList } from '@/components/super-admin/agency-list';
 import { BroadcastManager } from '@/components/super-admin/broadcast-manager';
 import { BroadcastEmailDialog } from '@/components/super-admin/broadcast-email-dialog';
 import { GlobalRevenueChart } from '@/components/super-admin/global-revenue-chart';
+import { ActivityFeed } from '@/components/super-admin/activity-feed';
 import {
   Building2,
   Activity,
@@ -23,6 +24,7 @@ import {
   getAgencyHealthData,
   getGlobalRevenueData,
 } from '@/lib/supabase/super-admin';
+import { getRecentActivity, getSuperAdminActions } from '@/lib/supabase/audit-log';
 
 export default async function SuperAdminPage() {
   const supabase = await createClient();
@@ -37,6 +39,8 @@ export default async function SuperAdminPage() {
     healthData,
     revenue30,
     revenue90,
+    recentActivity,
+    adminActions,
   ] = await Promise.all([
     supabase.from('agencies').select('*').order('created_at', { ascending: false }),
     getAllBroadcasts(),
@@ -46,6 +50,8 @@ export default async function SuperAdminPage() {
     getAgencyHealthData(),
     getGlobalRevenueData(30),
     getGlobalRevenueData(90),
+    getRecentActivity(30),
+    getSuperAdminActions(30),
   ]);
 
   if (error) {
@@ -202,6 +208,18 @@ export default async function SuperAdminPage() {
             Agency Management
           </TabsTrigger>
           <TabsTrigger
+            value="activity"
+            className="data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-900"
+          >
+            Activity Feed
+          </TabsTrigger>
+          <TabsTrigger
+            value="my-actions"
+            className="data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-900"
+          >
+            My Actions
+          </TabsTrigger>
+          <TabsTrigger
             value="system"
             className="data-[state=active]:bg-zinc-100 data-[state=active]:text-zinc-900"
           >
@@ -211,6 +229,28 @@ export default async function SuperAdminPage() {
 
         <TabsContent value="agencies" className="space-y-4">
           <AgencyList agencies={agencies || []} currentSlug={currentSlug} healthData={healthData} />
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Platform Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed entries={recentActivity} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="my-actions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Your Admin Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed entries={adminActions} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">

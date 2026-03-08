@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { checkSuperAdmin } from '@/app/super-admin/layout';
 import { redirect } from 'next/navigation';
 import { AgencyDetailClient } from './agency-detail-client';
+import { getAgencyAuditLog } from '@/lib/supabase/audit-log';
 import type { AgencySettings } from '@/types/agency';
 
 export default async function AgencyDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +20,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [totalBookingsRes, monthBookingsRes, paymentsRes] = await Promise.all([
+  const [totalBookingsRes, monthBookingsRes, paymentsRes, auditLog] = await Promise.all([
     supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('agency_id', id),
     supabase
       .from('bookings')
@@ -31,6 +32,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
       .select('*')
       .eq('agency_id', id)
       .order('payment_date', { ascending: false }),
+    getAgencyAuditLog(id, 50),
   ]);
 
   const totalBookings = totalBookingsRes.count ?? 0;
@@ -70,6 +72,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
       totalBookings={totalBookings}
       revenueThisMonth={revenueThisMonth}
       payments={payments}
+      auditLog={auditLog}
     />
   );
 }

@@ -65,6 +65,8 @@ import {
   sendNotification,
 } from '@/app/super-admin/actions';
 import type { AgencySettings } from '@/types/agency';
+import type { AuditLogEntry } from '@/lib/supabase/audit-log';
+import { ActivityFeed } from '@/components/super-admin/activity-feed';
 
 interface AgencyData {
   id: string;
@@ -99,6 +101,7 @@ interface AgencyDetailClientProps {
   totalBookings: number;
   revenueThisMonth: number;
   payments: PaymentRecord[];
+  auditLog: AuditLogEntry[];
 }
 
 export function AgencyDetailClient({
@@ -106,6 +109,7 @@ export function AgencyDetailClient({
   totalBookings,
   revenueThisMonth,
   payments,
+  auditLog,
 }: AgencyDetailClientProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -981,6 +985,17 @@ export function AgencyDetailClient({
           </Card>
         </div>
       </div>
+
+      {/* Audit Log */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity Log</CardTitle>
+          <CardDescription>Recent actions and events for this agency.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActivityFeed entries={auditLog} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

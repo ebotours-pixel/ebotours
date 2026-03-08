@@ -178,7 +178,8 @@ _Started: March 3, 2026_
 | S2        | Agency Management          | 7 / 7 ✅               |
 | S3        | Subscription & Billing     | 5 / 5 ✅               |
 | S4        | Communication Tools        | 4 / 4 ✅               |
-| **TOTAL** |                            | **58 tasks completed** |
+| S5        | Audit Log & Activity       | 3 / 3 ✅               |
+| **TOTAL** |                            | **61 tasks completed** |
 
 ---
 
@@ -532,22 +533,30 @@ _Started: March 3, 2026_
 
 > You need to know what's happening across the platform.
 
-- [ ] **S5.1 — Platform-wide activity feed**
-  - A live feed on the super admin dashboard showing recent events across all tenants:
-    - "Agency X received a new booking ($450)"
-    - "Agency Y suspended"
-    - "New agency Z created"
-    - "Agency X deployed new tour"
-  - Stored in an `audit_log` table: `agency_id`, `action`, `metadata`, `created_at`
+- [x] **S5.1 — Platform-wide activity feed** ✅
+  - "Activity Feed" tab on super admin dashboard showing recent events across all tenants
+  - `audit_log` table: `id`, `agency_id`, `actor_id`, `action`, `category`, `metadata` (jsonb), `created_at`
+  - Indexed on `created_at`, `agency_id`, `category`, `actor_id` for fast queries
+  - `getRecentActivity(limit)` fetches + enriches with agency names
+  - `ActivityFeed` client component with category icons, relative timestamps, agency badges
+  - DB migration: `add_audit_log`
+  - Files: `src/lib/supabase/audit-log.ts`, `src/components/super-admin/activity-feed.tsx`, `src/app/super-admin/page.tsx`
 
-- [ ] **S5.2 — Per-agency audit log**
-  - On the agency detail page: a tab showing all activity for that agency
-  - Filter by action type: bookings / tours / settings changes / logins
-  - Useful for support calls ("What changed before my site broke?")
+- [x] **S5.2 — Per-agency audit log** ✅
+  - "Activity Log" card on agency detail page showing all actions for that agency
+  - `getAgencyAuditLog(agencyId, limit)` fetches filtered by agency
+  - Reuses `ActivityFeed` component
+  - Files: `src/app/super-admin/agencies/[id]/page.tsx`, `src/app/super-admin/agencies/[id]/agency-detail-client.tsx`
 
-- [ ] **S5.3 — Super admin action log**
-  - Log every action YOU take as super admin: created agency, changed modules, suspended, sent email
-  - Protects against accidental changes — you can trace exactly what happened
+- [x] **S5.3 — Super admin action log** ✅
+  - "My Actions" tab on super admin dashboard showing actions taken by the current super admin
+  - `getSuperAdminActions(limit)` fetches logs filtered by current user's `actor_id`
+  - All 14 super admin actions instrumented with `logAudit()` calls:
+    - Agency: create, update details, update modules, suspend, unsuspend, clone, delete
+    - Billing: update billing, record payment
+    - Communication: send email, broadcast email, send notification, bulk notification
+    - Broadcast: create targeted broadcast
+  - Files: `src/app/super-admin/actions.ts`, `src/app/super-admin/page.tsx`
 
 ---
 

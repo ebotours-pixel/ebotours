@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { checkSuperAdmin } from './layout';
+import { logAudit } from '@/lib/supabase/audit-log';
 
 export async function createAgency(formData: FormData) {
   const isSuper = await checkSuperAdmin();
@@ -56,6 +57,12 @@ export async function createAgency(formData: FormData) {
   if (error) {
     throw new Error(error.message);
   }
+
+  await logAudit({
+    action: `Created agency "${name}" (${slug})`,
+    category: 'agency',
+    metadata: { name, slug, tier },
+  });
 
   revalidatePath('/super-admin');
 }
@@ -116,6 +123,14 @@ export async function updateAgencyModules(agencyId: string, modules: AgencyModul
     .eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Updated agency modules',
+    category: 'agency',
+    metadata: { modules },
+  });
+
   revalidatePath('/super-admin');
 }
 
@@ -224,6 +239,14 @@ export async function updateAgencyDetails(
   const { error } = await supabase.from('agencies').update(updatePayload).eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Updated agency details',
+    category: 'agency',
+    metadata: { fields: Object.keys(data) },
+  });
+
   revalidatePath('/super-admin');
   revalidatePath(`/super-admin/agencies/${agencyId}`);
 }
@@ -271,6 +294,14 @@ export async function suspendAgency(agencyId: string, reason: string) {
     .eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Suspended agency',
+    category: 'agency',
+    metadata: { reason },
+  });
+
   revalidatePath('/super-admin');
   revalidatePath(`/super-admin/agencies/${agencyId}`);
 }
@@ -303,6 +334,13 @@ export async function unsuspendAgency(agencyId: string) {
     .eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Unsuspended agency',
+    category: 'agency',
+  });
+
   revalidatePath('/super-admin');
   revalidatePath(`/super-admin/agencies/${agencyId}`);
 }
@@ -332,6 +370,13 @@ export async function duplicateAgency(sourceAgencyId: string, newName: string, n
   });
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: `Cloned agency to "${newName}" (${newSlug})`,
+    category: 'agency',
+    metadata: { sourceAgencyId, newName, newSlug },
+  });
+
   revalidatePath('/super-admin');
 }
 
@@ -354,6 +399,13 @@ export async function deleteAgency(agencyId: string) {
   const { error } = await supabase.from('agencies').delete().eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Deleted agency',
+    category: 'agency',
+  });
+
   revalidatePath('/super-admin');
 }
 
@@ -383,6 +435,14 @@ export async function updateAgencyBilling(
   const { error } = await supabase.from('agencies').update(updatePayload).eq('id', agencyId);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: 'Updated billing settings',
+    category: 'billing',
+    metadata: data,
+  });
+
   revalidatePath('/super-admin');
   revalidatePath(`/super-admin/agencies/${agencyId}`);
 }
@@ -433,6 +493,13 @@ export async function recordPayment(
     })
     .eq('id', agencyId);
 
+  await logAudit({
+    agencyId,
+    action: `Recorded payment of $${data.amount}`,
+    category: 'billing',
+    metadata: { amount: data.amount, method: data.method },
+  });
+
   revalidatePath(`/super-admin/agencies/${agencyId}`);
   revalidatePath('/super-admin');
 }
@@ -471,6 +538,13 @@ export async function sendAgencyEmail(
     body: data.body,
     recipient_email: data.to,
     sent_by: user?.id || null,
+  });
+
+  await logAudit({
+    agencyId,
+    action: `Sent email: "${data.subject}"`,
+    category: 'communication',
+    metadata: { to: data.to, subject: data.subject },
   });
 
   revalidatePath(`/super-admin/agencies/${agencyId}`);
@@ -551,6 +625,12 @@ export async function sendBroadcastEmail(data: {
     }
   }
 
+  await logAudit({
+    action: `Sent broadcast email: "${data.subject}"`,
+    category: 'communication',
+    metadata: { filter: data.filter, sentCount, total: filteredAgencies.length },
+  });
+
   revalidatePath('/super-admin');
   return { sentCount, totalAgencies: filteredAgencies.length };
 }
@@ -578,6 +658,18 @@ export async function createBroadcastWithTargeting(formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: 'Created targeted broadcast',
+    category: 'broadcast',
+    metadata: {
+      message,
+      variant,
+      targetTier: targetTier || 'all',
+      targetStatus: targetStatus || 'all',
+    },
+  });
+
   revalidatePath('/super-admin');
   revalidatePath('/', 'layout');
 }
@@ -600,6 +692,14 @@ export async function sendNotification(
   });
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    agencyId,
+    action: `Sent notification: "${data.title}"`,
+    category: 'communication',
+    metadata: { title: data.title, type: data.type || 'info' },
+  });
+
   revalidatePath(`/super-admin/agencies/${agencyId}`);
 }
 
@@ -650,6 +750,13 @@ export async function sendBulkNotification(data: {
   const { error } = await supabase.from('agency_notifications').insert(rows);
 
   if (error) throw new Error(error.message);
+
+  await logAudit({
+    action: `Sent bulk notification: "${data.title}"`,
+    category: 'communication',
+    metadata: { filter: data.filter, sentCount: rows.length },
+  });
+
   revalidatePath('/super-admin');
   return { sentCount: rows.length };
 }
