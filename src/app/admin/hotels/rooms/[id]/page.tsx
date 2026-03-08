@@ -96,6 +96,7 @@ export default async function EditRoomTypePage(props: { params: Promise<{ id: st
       services,
       highlights,
       images: [...existingImages, ...images],
+      isFeatured: formData.get('isFeatured') === 'on',
       isActive,
     });
   };

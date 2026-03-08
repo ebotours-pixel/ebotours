@@ -338,24 +338,25 @@ _Started: March 3, 2026_
 
 ## 🔧 GROUP H5 — Admin Improvements for Hotel Mode
 
-- [ ] **H5.1 — Home Page Editor: Rooms section toggle**
-  - Add a "Rooms Section" card in the Home Page Editor
-  - Admin can: show/hide section, set section title, choose how many rooms to display (3, 6, or all)
+- [x] **H5.1 — Home Page Editor: Rooms section toggle**
+  - ✅ "Rooms Section" tab added to Home Page Editor with title, subtitle, and count (3, 6, or all) fields
+  - ✅ Visibility toggle already existed; room count of 0 = show all rooms
+  - ✅ `roomsSection` data saved to `contentToSave` and merged from `initialContent`
 
-- [ ] **H5.2 — Home Page Editor: Amenities section**
-  - Add amenities management in Home Page Editor
-  - Preset list of icons (Pool, Spa, WiFi, etc.) + custom label
-  - Admin toggles which ones to show
+- [x] **H5.2 — Home Page Editor: Amenities section**
+  - ✅ Amenities tab in Home Page Editor with title/subtitle fields
+  - ✅ 16 preset amenities (WiFi, Pool, Spa, Restaurant, Gym, Parking, Bar, Shuttle, Room Service, Pets, Kids Club, Meetings, AC, Beach, Laundry, Concierge)
+  - ✅ Toggle switches for each amenity; rendered as icon grid on home page
 
-- [ ] **H5.3 — Home Page Editor: Gallery section**
-  - Multi-image uploader for the gallery section
-  - Drag-to-reorder, remove individual images
-  - Uses the existing `ImageUploader` component
+- [x] **H5.3 — Home Page Editor: Gallery section**
+  - ✅ Multi-image uploader (up to 20 photos) in Gallery tab
+  - ✅ Drag-to-reorder added to `ImageUploader` component (native HTML5 drag & drop with grip handle)
+  - ✅ Remove individual images with X button on hover
 
-- [ ] **H5.4 — Room type improvements**
-  - Add `highlights` field to room type: short bullet points shown on the card (e.g., "Nile view", "King bed", "Jacuzzi")
-  - Add `is_featured` boolean: admin marks 1–3 rooms as "featured" to show on home page
-  - Currently rooms have name + description + price but no quick-scan highlights
+- [x] **H5.4 — Room type improvements**
+  - ✅ `highlights` field already existed: `TagListEditor` in room-type-form Amenities tab, stored as `text[]` in DB
+  - ✅ `is_featured` boolean added: Supabase column (`is_featured boolean default false`), RoomType type, room-type-form checkbox, create/update server actions
+  - ✅ Featured rooms shown first in home page rooms carousel; "Featured" badge shown in admin room list
 
 ---
 

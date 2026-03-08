@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { UploadCloud, X } from 'lucide-react';
+import { UploadCloud, X, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -15,6 +15,8 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>([]);
+  const dragItemRef = useRef<number | null>(null);
+  const dragOverRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (value && value.length > 0) {
@@ -47,9 +49,6 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
 
       const newPreviews = acceptedFiles.map((file) => URL.createObjectURL(file));
 
-      // Update previews based on the limited files
-      // This is a bit tricky because we're mixing old previews with new ones
-      // and we need to make sure we're keeping the right ones if we truncated
       setPreviews((prev) => {
         const allPreviews = [...prev, ...newPreviews];
         return maxFiles ? allPreviews.slice(0, maxFiles) : allPreviews;
@@ -71,7 +70,6 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
   });
 
   const handleRemove = (indexToRemove: number) => {
-    // Revoke the object URL to prevent memory leaks
     URL.revokeObjectURL(previews[indexToRemove]);
 
     const updatedFiles = value.filter((_, index) => index !== indexToRemove);
@@ -79,6 +77,31 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
 
     onChange(updatedFiles);
     setPreviews(updatedPreviews);
+  };
+
+  const handleDragStart = (index: number) => {
+    dragItemRef.current = index;
+  };
+
+  const handleDragEnter = (index: number) => {
+    dragOverRef.current = index;
+  };
+
+  const handleDragEnd = () => {
+    if (dragItemRef.current === null || dragOverRef.current === null) return;
+    if (dragItemRef.current === dragOverRef.current) {
+      dragItemRef.current = null;
+      dragOverRef.current = null;
+      return;
+    }
+
+    const reorderedFiles = [...value];
+    const [movedFile] = reorderedFiles.splice(dragItemRef.current, 1);
+    reorderedFiles.splice(dragOverRef.current, 0, movedFile);
+    onChange(reorderedFiles);
+
+    dragItemRef.current = null;
+    dragOverRef.current = null;
   };
 
   return (
@@ -102,17 +125,24 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
       {previews.length > 0 && (
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {previews.map((preview, index) => (
-            <div key={index} className="relative group aspect-square">
+            <div
+              key={`${index}-${typeof value[index] === 'string' ? value[index] : (value[index] as File)?.name}`}
+              className="relative group aspect-square"
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragEnter={() => handleDragEnter(index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => e.preventDefault()}
+            >
               <Image
                 src={preview}
                 alt={`Preview ${index}`}
-                onLoad={() => {
-                  // Optional: if it was a blob URL, we can revoke it now if we want
-                  // URL.revokeObjectURL(preview);
-                }}
                 fill
                 className="object-cover rounded-md"
               />
+              <div className="absolute top-1 left-1 h-6 w-6 flex items-center justify-center rounded bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+                <GripVertical className="h-4 w-4" />
+              </div>
               <Button
                 type="button"
                 variant="destructive"

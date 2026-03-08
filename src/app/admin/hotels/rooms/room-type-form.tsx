@@ -338,6 +338,16 @@ export function RoomTypeForm(props: {
                   />
                   Active (visible on public site)
                 </label>
+
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    name="isFeatured"
+                    type="checkbox"
+                    defaultChecked={initial?.isFeatured ?? false}
+                    className="h-4 w-4"
+                  />
+                  Featured (show on home page)
+                </label>
               </TabsContent>
 
               <TabsContent value="occupancy" className="space-y-5">

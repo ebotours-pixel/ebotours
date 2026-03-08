@@ -96,6 +96,7 @@ export default async function NewRoomTypePage() {
       services,
       highlights,
       images: [...imageUrls, ...images],
+      isFeatured: formData.get('isFeatured') === 'on',
       isActive,
     });
   };

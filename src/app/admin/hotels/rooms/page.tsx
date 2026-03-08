@@ -75,6 +75,11 @@ export default async function AdminHotelRoomsPage() {
                       <Badge variant={room.isActive ? 'default' : 'secondary'}>
                         {room.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                      {room.isFeatured ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">
+                          Featured
+                        </Badge>
+                      ) : null}
                       {room.view ? (
                         <Badge variant="outline" className="truncate">
                           {room.view}

@@ -707,7 +707,9 @@ export default function HomePageClient({
             <Carousel opts={{ align: 'start', loop: false }} className="w-full">
               <CarouselContent className="-ml-4">
                 {roomTypes
-                  .slice(0, homeContent.roomsSection?.count ?? roomTypes.length)
+                  .slice()
+                  .sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0))
+                  .slice(0, homeContent.roomsSection?.count || roomTypes.length)
                   .map((room) => (
                     <CarouselItem
                       key={room.id}

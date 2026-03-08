@@ -34,6 +34,7 @@ import {
   ShieldCheck,
   Package,
   Landmark,
+  BedDouble,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -132,6 +133,11 @@ const defaultHomePageData = {
     count: 0,
   },
   // Hotel Defaults
+  roomsSection: {
+    title: '',
+    subtitle: '',
+    count: 0,
+  },
   hotelFeatures: {
     title: '',
     subtitle: '',
@@ -402,6 +408,10 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
           ...defaultHomePageData.newsSection,
           ...initialContent.newsSection,
         },
+        roomsSection: {
+          ...defaultHomePageData.roomsSection,
+          ...initialContent.roomsSection,
+        },
         hotelFeatures: {
           ...defaultHomePageData.hotelFeatures,
           ...initialContent.hotelFeatures,
@@ -661,6 +671,7 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
         button2Link: values.videoSection.button2Link,
       },
       // Pass through hotel specific data
+      roomsSection: (values as any).roomsSection,
       hotelFeatures: (values as any).hotelFeatures,
       featuredRooms: (values as any).featuredRooms,
       hotelStory: (values as any).hotelStory,
@@ -774,6 +785,9 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
               </TabsTrigger>
               <TabsTrigger value="testimonials" className="w-full justify-start gap-2">
                 <MessageSquare className="h-4 w-4" /> Testimonials
+              </TabsTrigger>
+              <TabsTrigger value="rooms-section" className="w-full justify-start gap-2">
+                <BedDouble className="h-4 w-4" /> Rooms Section
               </TabsTrigger>
               <TabsTrigger value="hotel-features" className="w-full justify-start gap-2">
                 <Layout className="h-4 w-4" /> Hotel Features
@@ -1173,6 +1187,75 @@ export function HomePageEditorForm({ initialContent }: { initialContent: HomeCon
                         ))}
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Rooms Section Tab */}
+              <TabsContent value="rooms-section" className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Rooms Section</CardTitle>
+                    <CardDescription>
+                      Configure the &quot;Our Rooms&quot; section on the home page.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-6">
+                    <FormField
+                      control={form.control}
+                      name={'roomsSection.title' as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Section Title</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. Our Rooms" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={'roomsSection.subtitle' as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Section Subtitle</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g. Accommodation" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={'roomsSection.count' as any}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rooms to Display</FormLabel>
+                          <Select
+                            onValueChange={(v) => field.onChange(v === '0' ? 0 : Number(v))}
+                            value={String(field.value ?? 0)}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select count" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="0">All rooms</SelectItem>
+                              <SelectItem value="3">3 rooms</SelectItem>
+                              <SelectItem value="6">6 rooms</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Choose how many rooms to show. &quot;All rooms&quot; displays every
+                            active room.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>

@@ -240,6 +240,7 @@ export async function addRoomType(input: {
   highlights?: string[];
   accessibility?: Record<string, unknown>;
   images?: Array<File | string>;
+  isFeatured?: boolean;
   isActive: boolean;
 }) {
   const supabase = await createClient();
@@ -286,6 +287,7 @@ export async function addRoomType(input: {
       cancellation_policy: input.cancellationPolicy?.trim() || null,
       accessibility: input.accessibility ?? {},
       images: [...existingUrls, ...uploadedUrls],
+      is_featured: input.isFeatured ?? false,
       is_active: input.isActive,
     });
   };
@@ -345,6 +347,7 @@ export async function updateRoomType(input: {
   highlights?: string[];
   accessibility?: Record<string, unknown>;
   images?: Array<File | string>;
+  isFeatured?: boolean;
   isActive: boolean;
 }) {
   const supabase = await createClient();
@@ -391,6 +394,7 @@ export async function updateRoomType(input: {
       cancellation_policy: input.cancellationPolicy?.trim() || null,
       accessibility: input.accessibility ?? {},
       images: [...existingUrls, ...uploadedUrls],
+      is_featured: input.isFeatured ?? false,
       is_active: input.isActive,
     })
     .eq('id', input.id)

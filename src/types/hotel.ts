@@ -51,6 +51,7 @@ export type RoomType = {
   cancellationPolicy?: string | null;
   accessibility: Record<string, unknown>;
   images: string[];
+  isFeatured: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
