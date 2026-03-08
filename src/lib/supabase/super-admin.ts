@@ -9,6 +9,8 @@ export type PlatformStats = {
   newThisMonth: number;
   totalBookings: number;
   totalRevenue: number;
+  trialsExpiringThisWeek: number;
+  pastDueAgencies: number;
 };
 
 export type AgencyHealthRow = {
@@ -26,7 +28,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   const [agenciesRes, bookingsRes, newAgenciesRes] = await Promise.all([
-    supabase.from('agencies').select('status'),
+    supabase.from('agencies').select('status, subscription_status, trial_ends_at'),
     supabase.from('bookings').select('total_price'),
     supabase.from('agencies').select('id').gte('created_at', startOfMonth),
   ]);
@@ -35,6 +37,10 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   const bookings = bookingsRes.data || [];
   const newAgencies = newAgenciesRes.data || [];
 
+  const now7 = new Date();
+  now7.setDate(now7.getDate() + 7);
+  const weekFromNow = now7.toISOString();
+
   return {
     totalAgencies: agencies.length,
     activeAgencies: agencies.filter((a) => a.status === 'active').length,
@@ -42,6 +48,14 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     newThisMonth: newAgencies.length,
     totalBookings: bookings.length,
     totalRevenue: bookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0),
+    trialsExpiringThisWeek: agencies.filter(
+      (a) =>
+        a.subscription_status === 'trial' &&
+        a.trial_ends_at &&
+        new Date(a.trial_ends_at).getTime() <= new Date(weekFromNow).getTime() &&
+        new Date(a.trial_ends_at).getTime() > Date.now()
+    ).length,
+    pastDueAgencies: agencies.filter((a) => a.subscription_status === 'past_due').length,
   };
 }
 

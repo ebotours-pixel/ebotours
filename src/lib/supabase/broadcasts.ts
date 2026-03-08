@@ -8,6 +8,8 @@ export type SystemBroadcast = {
   is_active: boolean;
   created_at: string;
   expires_at: string | null;
+  target_tier: string | null;
+  target_status: string | null;
 };
 
 export const getActiveBroadcasts = cache(async (): Promise<SystemBroadcast[]> => {

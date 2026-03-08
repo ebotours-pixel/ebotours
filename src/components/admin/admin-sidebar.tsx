@@ -47,6 +47,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { User } from '@supabase/supabase-js';
 import { AgencySettings } from '@/types/agency';
+import { NotificationBell } from '@/components/admin/notification-bell';
+import type { AgencyNotification } from '@/lib/supabase/notifications';
 
 // const menuItems = [
 //   { href: "/admin/dashboard", label: "Dashboard", icon: Home },
@@ -90,12 +92,18 @@ export function AdminSidebar({
   children,
   settings,
   pendingBookingsCount,
+  agencyId,
+  unreadNotificationCount,
+  notifications,
 }: {
   user: User;
   handleSignOut: () => void;
   children: React.ReactNode;
   settings?: AgencySettings;
   pendingBookingsCount?: number;
+  agencyId?: string;
+  unreadNotificationCount?: number;
+  notifications?: AgencyNotification[];
 }) {
   const pathname = usePathname();
 
@@ -227,48 +235,57 @@ export function AdminSidebar({
             <SidebarTrigger className="md:hidden" />
             <h1 className="truncate text-lg font-semibold">{getPageTitle(pathname)}</h1>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="" alt="Admin" />
-                  <AvatarFallback>
-                    <UserCircle />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin</p>
-                  <p className="text-xs leading-none text-muted-foreground truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <a
-                  href="https://wa.me/201095280572"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer w-full flex items-center"
+          <div className="flex items-center gap-2">
+            {agencyId && (
+              <NotificationBell
+                agencyId={agencyId}
+                initialCount={unreadNotificationCount || 0}
+                initialNotifications={notifications || []}
+              />
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="" alt="Admin" />
+                    <AvatarFallback>
+                      <UserCircle />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">Admin</p>
+                    <p className="text-xs leading-none text-muted-foreground truncate">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <a
+                    href="https://wa.me/201095280572"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cursor-pointer w-full flex items-center"
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    <span>Support</span>
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
                 >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  <span>Support</span>
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleSignOut}
-                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </SidebarInset>

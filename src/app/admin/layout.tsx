@@ -5,6 +5,7 @@ import { AdminLayoutShell } from '@/components/admin/layout-shell';
 import { getCurrentAgency } from '@/lib/supabase/agencies';
 import { getBookings } from '@/lib/supabase/bookings';
 import { recordAdminLogin } from '@/lib/supabase/super-admin';
+import { getUnreadNotificationCount, getNotifications } from '@/lib/supabase/notifications';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -22,16 +23,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const settings = agency?.settings || {};
   const pendingBookingsCount = allBookings.filter((b) => b.status === 'Pending').length;
 
+  // Fetch notifications for the current agency
+  const [unreadCount, notifications] = agency?.id
+    ? await Promise.all([getUnreadNotificationCount(agency.id), getNotifications(agency.id)])
+    : [0, []];
+
   // Record admin login timestamp (non-blocking)
   if (agency?.id) {
     recordAdminLogin(agency.id).catch(() => {});
   }
 
   return (
-    <AdminLayoutShell user={user} settings={settings} pendingBookingsCount={pendingBookingsCount}>
+    <AdminLayoutShell
+      user={user}
+      settings={settings}
+      pendingBookingsCount={pendingBookingsCount}
+      agencyId={agency?.id}
+      unreadNotificationCount={unreadCount}
+      notifications={notifications}
+    >
       <div className="w-full">
         <ImpersonationBanner />
-        <BroadcastBanner />
+        <BroadcastBanner agencyTier={settings?.tier} agencyStatus={agency?.status} />
         {children}
       </div>
     </AdminLayoutShell>

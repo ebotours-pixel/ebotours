@@ -356,3 +356,300 @@ export async function deleteAgency(agencyId: string) {
   if (error) throw new Error(error.message);
   revalidatePath('/super-admin');
 }
+
+// --- Billing & Payment Actions (S3) ---
+
+export async function updateAgencyBilling(
+  agencyId: string,
+  data: {
+    subscription_status?: string;
+    trial_ends_at?: string | null;
+    next_billing_date?: string | null;
+    monthly_price?: number;
+  }
+) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  const supabase = await createClient();
+  const updatePayload: Record<string, unknown> = {};
+  if (data.subscription_status !== undefined)
+    updatePayload.subscription_status = data.subscription_status;
+  if (data.trial_ends_at !== undefined) updatePayload.trial_ends_at = data.trial_ends_at || null;
+  if (data.next_billing_date !== undefined)
+    updatePayload.next_billing_date = data.next_billing_date || null;
+  if (data.monthly_price !== undefined) updatePayload.monthly_price = data.monthly_price;
+
+  const { error } = await supabase.from('agencies').update(updatePayload).eq('id', agencyId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/super-admin');
+  revalidatePath(`/super-admin/agencies/${agencyId}`);
+}
+
+export async function recordPayment(
+  agencyId: string,
+  data: {
+    amount: number;
+    payment_date: string;
+    method: string;
+    reference_number?: string;
+    notes?: string;
+  }
+) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  if (!data.amount || data.amount <= 0) throw new Error('Amount must be positive');
+
+  const supabase = await createClient();
+
+  // Get current user for recorded_by
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from('agency_payments').insert({
+    agency_id: agencyId,
+    amount: data.amount,
+    payment_date: data.payment_date,
+    method: data.method,
+    reference_number: data.reference_number || null,
+    notes: data.notes || null,
+    recorded_by: user?.id || null,
+  });
+
+  if (error) throw new Error(error.message);
+
+  // Update subscription status to active and set next billing date
+  const nextBilling = new Date(data.payment_date);
+  nextBilling.setMonth(nextBilling.getMonth() + 1);
+
+  await supabase
+    .from('agencies')
+    .update({
+      subscription_status: 'active',
+      next_billing_date: nextBilling.toISOString(),
+    })
+    .eq('id', agencyId);
+
+  revalidatePath(`/super-admin/agencies/${agencyId}`);
+  revalidatePath('/super-admin');
+}
+
+// --- Communication Actions (S4) ---
+
+export async function sendAgencyEmail(
+  agencyId: string,
+  data: { to: string; subject: string; body: string }
+) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  if (!data.to || !data.subject || !data.body) throw new Error('All fields are required');
+
+  // Send via Resend
+  const { sendEmail } = await import('@/lib/email');
+  const result = await sendEmail({
+    to: data.to,
+    subject: data.subject,
+    html: data.body,
+    fromName: 'Tourista Platform',
+  });
+
+  if (!result.ok) throw new Error(result.error || 'Failed to send email');
+
+  // Log the email
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  await supabase.from('agency_emails').insert({
+    agency_id: agencyId,
+    subject: data.subject,
+    body: data.body,
+    recipient_email: data.to,
+    sent_by: user?.id || null,
+  });
+
+  revalidatePath(`/super-admin/agencies/${agencyId}`);
+}
+
+export async function sendBroadcastEmail(data: {
+  subject: string;
+  body: string;
+  filter: 'all' | 'active' | 'trial_expiring' | string;
+}) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  if (!data.subject || !data.body) throw new Error('Subject and body are required');
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Fetch agencies based on filter
+  let query = supabase.from('agencies').select('id, name, settings, subscription_status');
+
+  if (data.filter === 'active') {
+    query = query.eq('status', 'active');
+  } else if (data.filter === 'trial_expiring') {
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    query = query
+      .eq('subscription_status', 'trial')
+      .lte('trial_ends_at', weekFromNow.toISOString());
+  } else if (data.filter !== 'all') {
+    // Filter by tier
+    query = query.eq('status', 'active');
+  }
+
+  const { data: agencies } = await query;
+
+  if (!agencies || agencies.length === 0) throw new Error('No agencies match the filter');
+
+  // Filter by tier if specific tier selected
+  let filteredAgencies = agencies;
+  if (!['all', 'active', 'trial_expiring'].includes(data.filter)) {
+    filteredAgencies = agencies.filter(
+      (a) =>
+        (a.settings as Record<string, unknown>)?.tier === data.filter ||
+        (!(a.settings as Record<string, unknown>)?.tier && data.filter === 'free')
+    );
+  }
+
+  const { sendEmail } = await import('@/lib/email');
+  let sentCount = 0;
+
+  for (const agency of filteredAgencies) {
+    const contact = (agency.settings as Record<string, unknown>)?.contact as
+      | Record<string, string>
+      | undefined;
+    const email = contact?.email;
+    if (!email) continue;
+
+    const result = await sendEmail({
+      to: email,
+      subject: data.subject,
+      html: data.body,
+      fromName: 'Tourista Platform',
+    });
+
+    if (result.ok) {
+      sentCount++;
+      // Log each email
+      await supabase.from('agency_emails').insert({
+        agency_id: agency.id,
+        subject: data.subject,
+        body: data.body,
+        recipient_email: email,
+        sent_by: user?.id || null,
+      });
+    }
+  }
+
+  revalidatePath('/super-admin');
+  return { sentCount, totalAgencies: filteredAgencies.length };
+}
+
+export async function createBroadcastWithTargeting(formData: FormData) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  const message = formData.get('message') as string;
+  const variant = formData.get('variant') as string;
+  const targetTier = formData.get('target_tier') as string;
+  const targetStatus = formData.get('target_status') as string;
+  const expiresAt = formData.get('expires_at') as string;
+
+  if (!message) throw new Error('Message is required');
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('system_broadcasts').insert({
+    message,
+    variant,
+    is_active: true,
+    target_tier: targetTier || null,
+    target_status: targetStatus || null,
+    expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/super-admin');
+  revalidatePath('/', 'layout');
+}
+
+export async function sendNotification(
+  agencyId: string,
+  data: { title: string; message: string; type?: string }
+) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  if (!data.title || !data.message) throw new Error('Title and message are required');
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('agency_notifications').insert({
+    agency_id: agencyId,
+    title: data.title,
+    message: data.message,
+    type: data.type || 'info',
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/super-admin/agencies/${agencyId}`);
+}
+
+export async function sendBulkNotification(data: {
+  title: string;
+  message: string;
+  type?: string;
+  filter: 'all' | 'active' | 'trial_expiring' | string;
+}) {
+  const isSuper = await checkSuperAdmin();
+  if (!isSuper) throw new Error('Unauthorized');
+
+  if (!data.title || !data.message) throw new Error('Title and message are required');
+
+  const supabase = await createClient();
+
+  let query = supabase.from('agencies').select('id, settings, subscription_status');
+
+  if (data.filter === 'active') {
+    query = query.eq('status', 'active');
+  } else if (data.filter === 'trial_expiring') {
+    const weekFromNow = new Date();
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    query = query
+      .eq('subscription_status', 'trial')
+      .lte('trial_ends_at', weekFromNow.toISOString());
+  }
+
+  const { data: agencies } = await query;
+  if (!agencies || agencies.length === 0) throw new Error('No agencies match the filter');
+
+  let filteredAgencies = agencies;
+  if (!['all', 'active', 'trial_expiring'].includes(data.filter)) {
+    filteredAgencies = agencies.filter(
+      (a) =>
+        (a.settings as Record<string, unknown>)?.tier === data.filter ||
+        (!(a.settings as Record<string, unknown>)?.tier && data.filter === 'free')
+    );
+  }
+
+  const rows = filteredAgencies.map((a) => ({
+    agency_id: a.id,
+    title: data.title,
+    message: data.message,
+    type: data.type || 'info',
+  }));
+
+  const { error } = await supabase.from('agency_notifications').insert(rows);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/super-admin');
+  return { sentCount: rows.length };
+}

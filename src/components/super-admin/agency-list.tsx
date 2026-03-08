@@ -56,6 +56,10 @@ interface AgencyListProps {
     settings?: AgencySettings;
     last_admin_login_at?: string | null;
     internal_notes?: string | null;
+    subscription_status?: string | null;
+    trial_ends_at?: string | null;
+    next_billing_date?: string | null;
+    monthly_price?: number | null;
   }[];
   currentSlug: string;
   healthData: Record<string, AgencyHealthRow>;
@@ -92,6 +96,80 @@ function formatRelativeTime(dateStr: string | null | undefined): string {
   return `${months}mo ago`;
 }
 
+function getPlanBadge(tier: string | undefined): { label: string; className: string } {
+  switch (tier?.toLowerCase()) {
+    case 'starter':
+      return {
+        label: 'Starter',
+        className: 'bg-blue-100 text-blue-700 border-blue-200',
+      };
+    case 'pro':
+    case 'professional':
+      return {
+        label: 'Pro',
+        className: 'bg-purple-100 text-purple-700 border-purple-200',
+      };
+    case 'business':
+      return {
+        label: 'Business',
+        className: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      };
+    case 'enterprise':
+      return {
+        label: 'Enterprise',
+        className: 'bg-amber-100 text-amber-700 border-amber-200',
+      };
+    default:
+      return {
+        label: 'Free',
+        className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+      };
+  }
+}
+
+function getBillingBadge(
+  subscriptionStatus: string | null | undefined,
+  trialEndsAt: string | null | undefined
+): { label: string; icon: string; className: string } {
+  const status = subscriptionStatus || 'active';
+  switch (status) {
+    case 'trial': {
+      const daysLeft = trialEndsAt
+        ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : null;
+      const isExpiring = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+      const isExpired = daysLeft !== null && daysLeft <= 0;
+      return {
+        label: isExpired ? 'Trial Expired' : isExpiring ? `Trial (${daysLeft}d)` : 'Trial',
+        icon: '⏳',
+        className: isExpired
+          ? 'bg-red-100 text-red-700 border-red-200'
+          : isExpiring
+            ? 'bg-amber-100 text-amber-700 border-amber-200'
+            : 'bg-sky-100 text-sky-700 border-sky-200',
+      };
+    }
+    case 'past_due':
+      return {
+        label: 'Past Due',
+        icon: '⚠️',
+        className: 'bg-red-100 text-red-700 border-red-200',
+      };
+    case 'cancelled':
+      return {
+        label: 'Cancelled',
+        icon: '❌',
+        className: 'bg-zinc-100 text-zinc-500 border-zinc-200',
+      };
+    default:
+      return {
+        label: 'Active',
+        icon: '✅',
+        className: 'bg-green-100 text-green-700 border-green-200',
+      };
+  }
+}
+
 export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProps) {
   const [search, setSearch] = useState('');
   const [pending, startTransition] = useTransition();
@@ -125,6 +203,8 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
               <TableHead>Agency</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Plan</TableHead>
+              <TableHead>Billing</TableHead>
               <TableHead>Health</TableHead>
               <TableHead>Modules</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -133,7 +213,7 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                   No results found.
                 </TableCell>
               </TableRow>
@@ -198,13 +278,46 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
                         >
                           {agency.status}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          Tier:{' '}
-                          <span className="font-semibold text-foreground">
-                            {agency.settings?.tier || 'Free'}
-                          </span>
-                        </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const plan = getPlanBadge(agency.settings?.tier);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs shadow-none ${plan.className}`}
+                          >
+                            {plan.label}
+                          </Badge>
+                        );
+                      })()}
+                      {agency.monthly_price && agency.monthly_price > 0 ? (
+                        <span className="block text-[10px] text-muted-foreground mt-0.5">
+                          ${agency.monthly_price}/mo
+                        </span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const billing = getBillingBadge(
+                          agency.subscription_status,
+                          agency.trial_ends_at
+                        );
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={`text-xs shadow-none ${billing.className}`}
+                          >
+                            {billing.icon} {billing.label}
+                          </Badge>
+                        );
+                      })()}
+                      {agency.next_billing_date && (
+                        <span className="block text-[10px] text-muted-foreground mt-0.5">
+                          Next: {new Date(agency.next_billing_date).toLocaleDateString()}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
@@ -349,7 +462,7 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
                   {/* Expandable Quick Stats Row */}
                   {isExpanded && (
                     <TableRow key={`${agency.id}-stats`} className="bg-zinc-50/50">
-                      <TableCell colSpan={7} className="py-3 px-6">
+                      <TableCell colSpan={9} className="py-3 px-6">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
                             <span className="text-muted-foreground text-xs">Total Bookings</span>

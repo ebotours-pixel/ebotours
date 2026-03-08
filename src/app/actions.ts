@@ -219,3 +219,12 @@ User request: ${validated.data.prompt}`;
     };
   }
 }
+
+export async function markNotificationsRead(agencyId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from('agency_notifications')
+    .update({ is_read: true })
+    .eq('agency_id', agencyId)
+    .eq('is_read', false);
+}

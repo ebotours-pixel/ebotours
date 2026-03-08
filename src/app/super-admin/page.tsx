@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DeployTenantDialog } from '@/components/super-admin/deploy-tenant-dialog';
 import { AgencyList } from '@/components/super-admin/agency-list';
 import { BroadcastManager } from '@/components/super-admin/broadcast-manager';
+import { BroadcastEmailDialog } from '@/components/super-admin/broadcast-email-dialog';
 import { GlobalRevenueChart } from '@/components/super-admin/global-revenue-chart';
 import {
   Building2,
@@ -15,6 +16,7 @@ import {
   CalendarPlus,
   ShoppingCart,
   DollarSign,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   getPlatformStats,
@@ -61,9 +63,37 @@ export default async function SuperAdminPage() {
           <p className="text-zinc-500">Overview of your multi-tenant platform.</p>
         </div>
         <div className="flex items-center gap-2">
+          <BroadcastEmailDialog />
           <DeployTenantDialog />
         </div>
       </div>
+
+      {/* Trial Expiry & Past Due Alerts */}
+      {(stats.trialsExpiringThisWeek > 0 || stats.pastDueAgencies > 0) && (
+        <div className="space-y-2">
+          {stats.trialsExpiringThisWeek > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <p className="text-sm text-amber-800">
+                <span className="font-semibold">{stats.trialsExpiringThisWeek}</span>{' '}
+                {stats.trialsExpiringThisWeek === 1
+                  ? "agency's trial expires"
+                  : "agencies' trials expire"}{' '}
+                this week.
+              </p>
+            </div>
+          )}
+          {stats.pastDueAgencies > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+              <p className="text-sm text-red-800">
+                <span className="font-semibold">{stats.pastDueAgencies}</span>{' '}
+                {stats.pastDueAgencies === 1 ? 'agency has' : 'agencies have'} past due payments.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI Row 1 — Agency Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

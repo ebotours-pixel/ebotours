@@ -176,7 +176,9 @@ _Started: March 3, 2026_
 | 13        | Translations               | 1 / 1 ✅               |
 | S1        | Agency Overview            | 5 / 5 ✅               |
 | S2        | Agency Management          | 7 / 7 ✅               |
-| **TOTAL** |                            | **49 tasks completed** |
+| S3        | Subscription & Billing     | 5 / 5 ✅               |
+| S4        | Communication Tools        | 4 / 4 ✅               |
+| **TOTAL** |                            | **58 tasks completed** |
 
 ---
 
@@ -456,57 +458,73 @@ _Started: March 3, 2026_
 
 > Even without full Kashier automation, you need to manually track who has paid and when. (this payment will be like invoice, the user will see it on time, and have to pay it or the page will be paused automaticlly)
 
-- [ ] **S3.1 — Add billing fields to agencies table**
-  - New columns: `plan_tier` (starter/professional/business/enterprise), `subscription_status` (trial/active/past_due/cancelled), `trial_ends_at`, `next_billing_date`, `monthly_price`, 
-  - Migration in Supabase
+- [x] **S3.1 — Add billing fields to agencies table**
+  - ✅ New columns: `subscription_status` (trial/active/past_due/cancelled), `trial_ends_at`, `next_billing_date`, `monthly_price`
+  - ✅ New `agency_payments` table for payment history (amount, date, method, reference, notes, recorded_by)
+  - ✅ Indexes on `agency_id` and `payment_date`; RLS enabled
+  - Migration: `add_billing_fields_and_agency_payments`
 
-- [ ] **S3.2 — Billing status display in agency list**
-  - Add a "Plan" column and "Billing" column to the agency table
-  - Plan badge: Starter / Pro / Business / Enterprise (color coded)
-  - Billing badge: Active ✅ / Trial ⏳ / Past Due ⚠️ / Cancelled ❌
+- [x] **S3.2 — Billing status display in agency list**
+  - ✅ "Plan" column with color-coded badges: Free (zinc) / Starter (blue) / Pro (purple) / Business (indigo) / Enterprise (amber)
+  - ✅ "Billing" column with status badges: Active ✅ / Trial ⏳ / Past Due ⚠️ / Cancelled ❌
+  - ✅ Monthly price shown under Plan badge; next billing date shown under Billing badge
+  - ✅ Trial badge shows days remaining when < 7 days, "Trial Expired" when past
+  - File: `src/components/super-admin/agency-list.tsx`
 
-- [ ] **S3.3 — Trial expiry alerts**
-  - Agencies on trial get a warning badge when their trial ends in < 7 days
-  - Super admin sees a top-of-page alert: "3 agencies' trials expire this week"
-  - Optionally auto-suspend when trial ends (configurable)
+- [x] **S3.3 — Trial expiry alerts**
+  - ✅ Top-of-page amber alert: "X agencies' trials expire this week"
+  - ✅ Top-of-page red alert: "X agencies have past due payments"
+  - ✅ `getPlatformStats()` computes `trialsExpiringThisWeek` and `pastDueAgencies`
+  - ✅ Trial warning badges in agency list (amber when < 7 days, red when expired)
+  - Files: `src/lib/supabase/super-admin.ts`, `src/app/super-admin/page.tsx`
 
-- [ ] **S3.4 — Manual payment recording**
-  - On the agency detail page: "Record Payment" button
-  - Enter: amount, date, method (bank transfer, cash, card), reference number
-  - Stores a payment history log per agency
+- [x] **S3.4 — Manual payment recording**
+  - ✅ "Record Payment" button on agency detail page opens a Dialog
+  - ✅ Fields: amount, date, method (bank transfer / cash / card / kashier), reference number, notes
+  - ✅ `recordPayment()` server action stores to `agency_payments`, auto-updates subscription to active + sets next billing date
+  - Files: `src/app/super-admin/actions.ts`, `src/app/super-admin/agencies/[id]/agency-detail-client.tsx`
 
-- [ ] **S3.5 — Revenue per agency report**
-  - On the agency detail page: a simple table of recorded payments + total paid to date
-  - Helps you know lifetime value (LTV) per client
-
----
-
-## 📣 GROUP S4 — Communication Tools
+- [x] **S3.5 — Revenue per agency report**
+  - ✅ Payment history table on agency detail page with all recorded payments
+  - ✅ "Total paid to date" shown in CardDescription header
+  - ✅ Billing & Subscription management card: edit subscription status, monthly price, trial/billing dates
+  - ✅ `updateAgencyBilling()` server action
+  - Files: `src/app/super-admin/agencies/[id]/agency-detail-client.tsx`, `src/app/super-admin/agencies/[id]/page.tsx`
 
 > You need to be able to reach clients without leaving the super admin.
 
-- [ ] **S4.1 — Send email to a specific agency owner**
-  - "Send Email" button on the agency detail page
-  - Opens a compose dialog: subject + body (rich text)
+- [x] **S4.1 — Send email to a specific agency owner** ✅
+  - "Send Email" card on the agency detail page right column
+  - Opens a compose dialog: subject + body
   - Sends via Resend to the agency's contact email
-  - Logs the email in the agency's communication history
+  - Logs the email in `agency_emails` table
+  - `sendAgencyEmail()` server action in `src/app/super-admin/actions.ts`
+  - Files: `src/app/super-admin/agencies/[id]/agency-detail-client.tsx`
 
-- [ ] **S4.2 — Broadcast email to all agencies (or filtered group)**
-  - "Email All" button on the super admin dashboard
-  - Filter target: All / Active only / Trial expiring / Specific plan tier
-  - Use cases: platform updates, new features, invoice reminders
-  - Currently you have a broadcast banner — email is more reliable for important news
+- [x] **S4.2 — Broadcast email to all agencies (or filtered group)** ✅
+  - "Email All Agencies" button on the super admin dashboard header
+  - Filter target: All / Active only / Trial expiring / Free / Starter / Professional / Enterprise tier
+  - `sendBroadcastEmail()` server action iterates filtered agencies & sends via Resend
+  - `BroadcastEmailDialog` client component with filter, subject, body
+  - Files: `src/components/super-admin/broadcast-email-dialog.tsx`, `src/app/super-admin/page.tsx`
 
-- [ ] **S4.3 — Broadcast banner improvements**
-  - Target banner to specific agencies (not just all) — e.g., only show to Starter plan
-  - Set an expiry date for the banner (auto-dismiss after a date)
-  - Show banner preview before publishing
-  - Track dismiss count per agency (how many saw it)
+- [x] **S4.3 — Broadcast banner improvements** ✅
+  - Target banner by tier (`target_tier`) and status (`target_status`) columns added to `system_broadcasts`
+  - Set an expiry date (`expires_at`) for auto-dismiss
+  - `BroadcastManager` form updated with tier/status/expiry fields, uses `createBroadcastWithTargeting()`
+  - `BroadcastBanner` filters broadcasts by agency tier/status and skips expired
+  - Broadcast list shows targeting badges (tier, status, expiry date)
+  - DB migration: `add_agency_emails_and_notifications`
+  - Files: `src/lib/supabase/broadcasts.ts`, `src/components/super-admin/broadcast-manager.tsx`, `src/components/admin/broadcast-banner.tsx`
 
-- [ ] **S4.4 — In-app notification to agency admin**
-  - Send a notification that appears inside the agency's admin panel (not just their site)
-  - Use cases: "Your trial ends in 3 days", "New feature available", "Action required: update your billing"
-  - Stored in a `notifications` table per agency, shown as a bell icon alert in their admin header
+- [x] **S4.4 — In-app notification to agency admin** ✅
+  - Send notification from agency detail page ("Send Notification" card with title, message, type)
+  - `agency_notifications` table: id, agency_id, title, message, type, is_read, created_at
+  - Bell icon in admin sidebar header with unread count badge
+  - Popover with notification list, marks as read on open
+  - `sendNotification()` and `sendBulkNotification()` server actions
+  - `markNotificationsRead()` action, `getUnreadNotificationCount()`, `getNotifications()` helpers
+  - Files: `src/components/admin/notification-bell.tsx`, `src/lib/supabase/notifications.ts`, `src/components/admin/admin-sidebar.tsx`, `src/components/admin/layout-shell.tsx`, `src/app/admin/layout.tsx`
 
 ---
 

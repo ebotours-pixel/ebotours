@@ -27,6 +27,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   ArrowLeft,
   Save,
   Ban,
@@ -38,14 +47,22 @@ import {
   DollarSign,
   ShoppingCart,
   StickyNote,
+  CreditCard,
+  Receipt,
+  Mail,
+  Bell,
 } from 'lucide-react';
 import {
   updateAgencyDetails,
   updateAgencyNotes,
+  updateAgencyBilling,
   suspendAgency,
   unsuspendAgency,
   duplicateAgency,
   deleteAgency,
+  recordPayment,
+  sendAgencyEmail,
+  sendNotification,
 } from '@/app/super-admin/actions';
 import type { AgencySettings } from '@/types/agency';
 
@@ -61,18 +78,34 @@ interface AgencyData {
   suspended_reason: string;
   suspended_at: string | null;
   last_admin_login_at: string | null;
+  subscription_status: string;
+  trial_ends_at: string | null;
+  next_billing_date: string | null;
+  monthly_price: number;
+}
+
+interface PaymentRecord {
+  id: string;
+  amount: number;
+  payment_date: string;
+  method: string;
+  reference_number: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 interface AgencyDetailClientProps {
   agency: AgencyData;
   totalBookings: number;
   revenueThisMonth: number;
+  payments: PaymentRecord[];
 }
 
 export function AgencyDetailClient({
   agency,
   totalBookings,
   revenueThisMonth,
+  payments,
 }: AgencyDetailClientProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -96,6 +129,35 @@ export function AgencyDetailClient({
   const [cloneName, setCloneName] = useState('');
   const [cloneSlug, setCloneSlug] = useState('');
 
+  // Billing state
+  const [subscriptionStatus, setSubscriptionStatus] = useState(agency.subscription_status);
+  const [trialEndsAt, setTrialEndsAt] = useState(
+    agency.trial_ends_at ? agency.trial_ends_at.split('T')[0] : ''
+  );
+  const [nextBillingDate, setNextBillingDate] = useState(
+    agency.next_billing_date ? agency.next_billing_date.split('T')[0] : ''
+  );
+  const [monthlyPrice, setMonthlyPrice] = useState(String(agency.monthly_price || 0));
+
+  // Payment dialog state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+
+  // Email dialog state
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+
+  // Notification dialog state
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifType, setNotifType] = useState('info');
+
   function handleSaveDetails() {
     startTransition(async () => {
       await updateAgencyDetails(agency.id, {
@@ -116,11 +178,70 @@ export function AgencyDetailClient({
     });
   }
 
+  function handleSaveBilling() {
+    startTransition(async () => {
+      await updateAgencyBilling(agency.id, {
+        subscription_status: subscriptionStatus,
+        trial_ends_at: trialEndsAt ? new Date(trialEndsAt).toISOString() : null,
+        next_billing_date: nextBillingDate ? new Date(nextBillingDate).toISOString() : null,
+        monthly_price: Number(monthlyPrice) || 0,
+      });
+    });
+  }
+
+  function handleRecordPayment() {
+    if (!paymentAmount || Number(paymentAmount) <= 0) return;
+    startTransition(async () => {
+      await recordPayment(agency.id, {
+        amount: Number(paymentAmount),
+        payment_date: paymentDate,
+        method: paymentMethod,
+        reference_number: paymentRef || undefined,
+        notes: paymentNotes || undefined,
+      });
+      setPaymentOpen(false);
+      setPaymentAmount('');
+      setPaymentRef('');
+      setPaymentNotes('');
+    });
+  }
+
   function handleSuspend() {
     if (!suspendReason.trim()) return;
     startTransition(async () => {
       await suspendAgency(agency.id, suspendReason.trim());
       setSuspendReason('');
+    });
+  }
+
+  function handleSendEmail() {
+    if (!emailSubject.trim() || !emailBody.trim()) return;
+    const recipientEmail = contactEmail || '';
+    if (!recipientEmail) return;
+    startTransition(async () => {
+      await sendAgencyEmail(agency.id, {
+        to: recipientEmail,
+        subject: emailSubject.trim(),
+        body: emailBody.trim(),
+      });
+      setEmailOpen(false);
+      setEmailSubject('');
+      setEmailBody('');
+    });
+  }
+
+  function handleSendNotification() {
+    if (!notifTitle.trim() || !notifMessage.trim()) return;
+    startTransition(async () => {
+      await sendNotification(agency.id, {
+        title: notifTitle.trim(),
+        message: notifMessage.trim(),
+        type: notifType,
+      });
+      setNotifOpen(false);
+      setNotifTitle('');
+      setNotifMessage('');
+      setNotifType('info');
     });
   }
 
@@ -355,10 +476,359 @@ export function AgencyDetailClient({
               </div>
             </CardContent>
           </Card>
+
+          {/* Billing & Subscription Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Billing & Subscription
+              </CardTitle>
+              <CardDescription>Manage subscription status and billing details.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subscriptionStatus">Subscription Status</Label>
+                  <Select value={subscriptionStatus} onValueChange={setSubscriptionStatus}>
+                    <SelectTrigger id="subscriptionStatus">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="trial">Trial</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="past_due">Past Due</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="monthlyPrice">Monthly Price ($)</Label>
+                  <Input
+                    id="monthlyPrice"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={monthlyPrice}
+                    onChange={(e) => setMonthlyPrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="trialEndsAt">Trial Ends At</Label>
+                  <Input
+                    id="trialEndsAt"
+                    type="date"
+                    value={trialEndsAt}
+                    onChange={(e) => setTrialEndsAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nextBillingDate">Next Billing Date</Label>
+                  <Input
+                    id="nextBillingDate"
+                    type="date"
+                    value={nextBillingDate}
+                    onChange={(e) => setNextBillingDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveBilling} disabled={pending}>
+                  <Save className="mr-1.5 h-4 w-4" />
+                  Save Billing
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment History (S3.5) */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-4 w-4" />
+                    Payment History
+                  </CardTitle>
+                  <CardDescription>
+                    Total paid to date:{' '}
+                    <span className="font-semibold text-foreground">
+                      $
+                      {payments
+                        .reduce((sum, p) => sum + Number(p.amount), 0)
+                        .toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                    </span>
+                  </CardDescription>
+                </div>
+                <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <DollarSign className="mr-1.5 h-4 w-4" />
+                      Record Payment
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Record Payment</DialogTitle>
+                      <DialogDescription>
+                        Record a manual payment for {agency.name}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="payAmount">Amount ($)</Label>
+                          <Input
+                            id="payAmount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payDate">Date</Label>
+                          <Input
+                            id="payDate"
+                            type="date"
+                            value={paymentDate}
+                            onChange={(e) => setPaymentDate(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="payMethod">Method</Label>
+                          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                            <SelectTrigger id="payMethod">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="kashier">Kashier</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payRef">Reference Number</Label>
+                          <Input
+                            id="payRef"
+                            value={paymentRef}
+                            onChange={(e) => setPaymentRef(e.target.value)}
+                            placeholder="Optional"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="payNotes">Notes</Label>
+                        <Textarea
+                          id="payNotes"
+                          value={paymentNotes}
+                          onChange={(e) => setPaymentNotes(e.target.value)}
+                          placeholder="Optional notes..."
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setPaymentOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleRecordPayment}
+                        disabled={pending || !paymentAmount || Number(paymentAmount) <= 0}
+                      >
+                        Record Payment
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No payments recorded yet.
+                </p>
+              ) : (
+                <div className="rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-zinc-50">
+                        <th className="text-left p-2 font-medium text-muted-foreground">Date</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Amount</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Method</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">
+                          Reference
+                        </th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((p) => (
+                        <tr key={p.id} className="border-b last:border-0">
+                          <td className="p-2">{new Date(p.payment_date).toLocaleDateString()}</td>
+                          <td className="p-2 font-medium">
+                            $
+                            {Number(p.amount).toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </td>
+                          <td className="p-2 capitalize">{p.method.replace(/_/g, ' ')}</td>
+                          <td className="p-2 text-muted-foreground font-mono text-xs">
+                            {p.reference_number || '—'}
+                          </td>
+                          <td className="p-2 text-muted-foreground">{p.notes || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column: Actions */}
         <div className="space-y-6">
+          {/* Send Email Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Send Email</CardTitle>
+              <CardDescription>Send an email to the agency owner.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full" disabled={!contactEmail}>
+                    <Mail className="mr-1.5 h-4 w-4" />
+                    {contactEmail ? `Email ${contactEmail}` : 'No contact email set'}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Email to {agency.name}</DialogTitle>
+                    <DialogDescription>Email will be sent to {contactEmail}.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="emailSubject">Subject</Label>
+                      <Input
+                        id="emailSubject"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        placeholder="Subject line..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="emailBody">Body</Label>
+                      <Textarea
+                        id="emailBody"
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        placeholder="Write your message..."
+                        rows={6}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="ghost" onClick={() => setEmailOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSendEmail}
+                      disabled={pending || !emailSubject.trim() || !emailBody.trim()}
+                    >
+                      <Mail className="mr-1.5 h-4 w-4" />
+                      Send Email
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
+          {/* Send Notification Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Send Notification</CardTitle>
+              <CardDescription>Send an in-app notification to this agency.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog open={notifOpen} onOpenChange={setNotifOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <Bell className="mr-1.5 h-4 w-4" />
+                    Send Notification
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Notify {agency.name}</DialogTitle>
+                    <DialogDescription>
+                      This notification will appear in the agency admin panel.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="notifTitle">Title</Label>
+                      <Input
+                        id="notifTitle"
+                        value={notifTitle}
+                        onChange={(e) => setNotifTitle(e.target.value)}
+                        placeholder="Notification title..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notifMessage">Message</Label>
+                      <Textarea
+                        id="notifMessage"
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        placeholder="Notification message..."
+                        rows={4}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notifType">Type</Label>
+                      <Select value={notifType} onValueChange={setNotifType}>
+                        <SelectTrigger id="notifType">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="info">Info</SelectItem>
+                          <SelectItem value="warning">Warning</SelectItem>
+                          <SelectItem value="success">Success</SelectItem>
+                          <SelectItem value="billing">Billing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="ghost" onClick={() => setNotifOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSendNotification}
+                      disabled={pending || !notifTitle.trim() || !notifMessage.trim()}
+                    >
+                      <Bell className="mr-1.5 h-4 w-4" />
+                      Send
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
           {/* Suspend / Unsuspend Card */}
           <Card>
             <CardHeader>

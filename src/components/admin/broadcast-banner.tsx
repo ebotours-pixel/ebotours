@@ -2,10 +2,30 @@ import { getActiveBroadcasts } from '@/lib/supabase/broadcasts';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react';
 
-export async function BroadcastBanner() {
-  const broadcasts = await getActiveBroadcasts();
+interface BroadcastBannerProps {
+  agencyTier?: string;
+  agencyStatus?: string;
+}
 
-  if (!broadcasts || broadcasts.length === 0) {
+export async function BroadcastBanner({ agencyTier, agencyStatus }: BroadcastBannerProps) {
+  const allBroadcasts = await getActiveBroadcasts();
+
+  if (!allBroadcasts || allBroadcasts.length === 0) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const broadcasts = allBroadcasts.filter((b) => {
+    // Skip expired broadcasts
+    if (b.expires_at && b.expires_at < now) return false;
+    // Filter by tier if set
+    if (b.target_tier && agencyTier && b.target_tier !== agencyTier) return false;
+    // Filter by status if set
+    if (b.target_status && agencyStatus && b.target_status !== agencyStatus) return false;
+    return true;
+  });
+
+  if (broadcasts.length === 0) {
     return null;
   }
 

@@ -30,6 +30,8 @@ export type AgencySettings = {
   };
 };
 
+export type SubscriptionStatus = 'trial' | 'active' | 'past_due' | 'cancelled';
+
 export type Agency = {
   id: string;
   name: string;
@@ -38,6 +40,10 @@ export type Agency = {
   settings: AgencySettings;
   status: 'active' | 'suspended';
   createdAt: string;
+  subscription_status?: SubscriptionStatus;
+  trial_ends_at?: string | null;
+  next_billing_date?: string | null;
+  monthly_price?: number;
 };
 
 export type AgencyUser = {

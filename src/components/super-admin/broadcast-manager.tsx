@@ -21,7 +21,11 @@ import {
   XCircle,
   Loader2,
 } from 'lucide-react';
-import { createBroadcast, toggleBroadcast, deleteBroadcast } from '@/app/super-admin/actions';
+import {
+  createBroadcastWithTargeting,
+  toggleBroadcast,
+  deleteBroadcast,
+} from '@/app/super-admin/actions';
 import { SystemBroadcast } from '@/lib/supabase/broadcasts';
 import { useState, useTransition } from 'react';
 
@@ -32,8 +36,7 @@ export function BroadcastManager({ broadcasts }: { broadcasts: SystemBroadcast[]
   async function handleCreate(formData: FormData) {
     setIsCreating(true);
     try {
-      await createBroadcast(formData);
-      // Reset form? native form reset happens if we use useRef or just let it reload
+      await createBroadcastWithTargeting(formData);
       const form = document.getElementById('broadcast-form') as HTMLFormElement;
       form?.reset();
     } catch (e) {
@@ -72,6 +75,38 @@ export function BroadcastManager({ broadcasts }: { broadcasts: SystemBroadcast[]
                   <SelectItem value="success">Success (Green)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Target Tier (optional)</label>
+              <Select name="target_tier" defaultValue="all">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tiers</SelectItem>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="starter">Starter</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="enterprise">Enterprise</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Target Status (optional)</label>
+              <Select name="target_status" defaultValue="all">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Expires At (optional)</label>
+              <Input name="expires_at" type="date" />
             </div>
             <Button type="submit" className="w-full" disabled={isCreating}>
               {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -120,6 +155,21 @@ export function BroadcastManager({ broadcasts }: { broadcasts: SystemBroadcast[]
                       <Badge variant="outline" className="text-[10px] h-5 capitalize">
                         {broadcast.variant}
                       </Badge>
+                      {broadcast.target_tier && (
+                        <Badge variant="secondary" className="text-[10px] h-5 capitalize">
+                          {broadcast.target_tier}
+                        </Badge>
+                      )}
+                      {broadcast.target_status && (
+                        <Badge variant="secondary" className="text-[10px] h-5 capitalize">
+                          {broadcast.target_status}
+                        </Badge>
+                      )}
+                      {broadcast.expires_at && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Expires {new Date(broadcast.expires_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

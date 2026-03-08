@@ -19,13 +19,18 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const [totalBookingsRes, monthBookingsRes] = await Promise.all([
+  const [totalBookingsRes, monthBookingsRes, paymentsRes] = await Promise.all([
     supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('agency_id', id),
     supabase
       .from('bookings')
       .select('total_price')
       .eq('agency_id', id)
       .gte('created_at', startOfMonth),
+    supabase
+      .from('agency_payments')
+      .select('*')
+      .eq('agency_id', id)
+      .order('payment_date', { ascending: false }),
   ]);
 
   const totalBookings = totalBookingsRes.count ?? 0;
@@ -33,6 +38,15 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
     (sum, b) => sum + (Number(b.total_price) || 0),
     0
   );
+  const payments = (paymentsRes.data || []) as {
+    id: string;
+    amount: number;
+    payment_date: string;
+    method: string;
+    reference_number: string | null;
+    notes: string | null;
+    created_at: string;
+  }[];
 
   return (
     <AgencyDetailClient
@@ -48,9 +62,14 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ i
         suspended_reason: agency.suspended_reason || '',
         suspended_at: agency.suspended_at || null,
         last_admin_login_at: agency.last_admin_login_at || null,
+        subscription_status: agency.subscription_status || 'active',
+        trial_ends_at: agency.trial_ends_at || null,
+        next_billing_date: agency.next_billing_date || null,
+        monthly_price: Number(agency.monthly_price) || 0,
       }}
       totalBookings={totalBookings}
       revenueThisMonth={revenueThisMonth}
+      payments={payments}
     />
   );
 }
