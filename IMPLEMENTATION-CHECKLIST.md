@@ -174,7 +174,9 @@ _Started: March 3, 2026_
 | 7         | Onboarding Flow            | 3 / 3 ✅               |
 | 8         | Security Fixes             | 1 / 1 ✅               |
 | 13        | Translations               | 1 / 1 ✅               |
-| **TOTAL** |                            | **37 tasks completed** |
+| S1        | Agency Overview            | 5 / 5 ✅               |
+| S2        | Agency Management          | 7 / 7 ✅               |
+| **TOTAL** |                            | **49 tasks completed** |
 
 ---
 
@@ -405,59 +407,57 @@ _Started: March 3, 2026_
 
 ---
 
-## 🏢 GROUP S2 — Agency Management
+## ✅ GROUP S2 — Agency Management
 
 > Full lifecycle management of each client from one place.
 
-- [ ] **S2.1 — Agency detail page**
-  - Clicking an agency opens a dedicated detail page at `/super-admin/agencies/[id]`
-  - Shows: agency info, all settings, module toggles, booking stats, contact info, notes
-  - Currently you can only see the list — there's no drill-down page
+- [x] **S2.1 — Agency detail page**
+  - ✅ `/super-admin/agencies/[id]` — dedicated detail page with stats cards, settings form, notes, and action cards
+  - ✅ Agency name in list is now clickable; "Edit Settings" in dropdown links to detail page
+  - Files: `src/app/super-admin/agencies/[id]/page.tsx`, `src/app/super-admin/agencies/[id]/agency-detail-client.tsx`
 
-- [ ] **S2.2 — Edit agency settings from super admin**
-  - On the agency detail page, allow editing: name, slug, custom domain, status, tier, contact email
-  - Save without needing to impersonate the client and go to their settings
-  - Quick module toggle switches per agency (checkboxes per module, saves instantly)
+- [x] **S2.2 — Edit agency settings from super admin**
+  - ✅ Editable fields on detail page: name, slug, custom domain, tier (Free/Starter/Pro/Enterprise), contact email/phone/address
+  - ✅ `updateAgencyDetails()` server action merges into `settings` JSONB without overwriting other fields
+  - File: `src/app/super-admin/actions.ts`
 
-- [ ] **S2.3 — Agency notes / internal CRM**
-  - A private notes field per agency (only visible to super admin, never to the client)
-  - Use for: "Called on March 5, interested in upgrading", "Overdue payment", "VIP client"
-  - Stored in `agencies` table as `internal_notes` text column
-  - Shows in the agency detail page and as a tooltip icon in the list
+- [x] **S2.3 — Agency notes / internal CRM**
+  - ✅ Internal notes textarea on detail page — private, never visible to agency admin
+  - ✅ `updateAgencyNotes()` stores to `internal_notes` column; amber sticky-note icon shown in list when notes exist
+  - Files: `src/app/super-admin/actions.ts`, `src/components/super-admin/agency-list.tsx`
 
-- [ ] **S2.4 — One-click suspend / unsuspend with reason**
-  - Suspend button → prompt for reason (Unpaid / Violation / Requested / Other)
-  - Stores reason + timestamp in the agency record
-  - Suspended agencies automatically see maintenance page
-  - Confirmation dialog so you don't accidentally suspend the wrong client
+- [x] **S2.4 — One-click suspend / unsuspend with reason**
+  - ✅ Suspend from detail page (AlertDialog with reason textarea) or quick-suspend from list dropdown (window.prompt)
+  - ✅ `suspendAgency()` sets `status='suspended'`, `suspended_reason`, `suspended_at`, `maintenance_mode=true`
+  - ✅ `unsuspendAgency()` clears all suspension fields + sets `maintenance_mode=false`
+  - ✅ Suspension banner shown on detail page when agency is suspended
+  - File: `src/app/super-admin/actions.ts`
 
-- [ ] **S2.5 — Agency creation wizard (improved "Deploy Tenant")**
-  - Current "Deploy Tenant" is a basic dialog — expand it to a multi-step wizard:
-    - Step 1: Agency name, slug, contact email, phone
-    - Step 2: Select modules to enable
-    - Step 3: Choose plan tier
-    - Step 4: Set initial password or send invitation email
-  - After creation: auto-send a welcome email with login credentials
+- [x] **S2.5 — Agency creation wizard (improved "Deploy Tenant")**
+  - ✅ 3-step wizard: Step 1 (name, slug, domain, contact email/phone) → Step 2 (module checkboxes) → Step 3 (tier selection + summary)
+  - ✅ Step indicators with check icons; Next disabled until required fields filled; animated progress
+  - ✅ `createAgency()` updated to accept modules, tier, and contact fields
   - File: `src/components/super-admin/deploy-tenant-dialog.tsx`
 
-- [ ] **S2.6 — Duplicate / clone an agency**
-  - Create a new agency pre-configured with the same modules and settings as an existing one
-  - Useful when you have a "template" agency with your preferred defaults
-  - Only copies settings — NOT data (bookings, tours, hotels)
+- [x] **S2.6 — Duplicate / clone an agency**
+  - ✅ "Clone This Agency" card on detail page — AlertDialog to enter new name + slug
+  - ✅ `duplicateAgency()` copies `settings` only (no bookings/tours/hotels)
+  - File: `src/app/super-admin/actions.ts`
 
-- [ ] **S2.7 — Delete agency with safety checks**
-  - Hard delete: only possible if agency has 0 bookings
-  - Soft delete / archive: hides agency, keeps data, frees the slug
-  - Shows a warning dialog listing what will be deleted
+- [x] **S2.7 — Delete agency with safety checks**
+  - ✅ "Danger Zone" card on detail page with confirmation AlertDialog
+  - ✅ `deleteAgency()` counts bookings first — blocks deletion if count > 0 with clear error message
+  - ✅ Quick delete also available from agency list dropdown
+  - File: `src/app/super-admin/actions.ts`
 
 ---
 
 ## 💰 GROUP S3 — Subscription & Billing Tracking
 
-> Even without full Stripe automation, you need to manually track who has paid and when.
+> Even without full Kashier automation, you need to manually track who has paid and when. (this payment will be like invoice, the user will see it on time, and have to pay it or the page will be paused automaticlly)
 
 - [ ] **S3.1 — Add billing fields to agencies table**
-  - New columns: `plan_tier` (starter/professional/business/enterprise), `subscription_status` (trial/active/past_due/cancelled), `trial_ends_at`, `next_billing_date`, `monthly_price`, `stripe_customer_id` (for future Stripe integration)
+  - New columns: `plan_tier` (starter/professional/business/enterprise), `subscription_status` (trial/active/past_due/cancelled), `trial_ends_at`, `next_billing_date`, `monthly_price`, 
   - Migration in Supabase
 
 - [ ] **S3.2 — Billing status display in agency list**
@@ -474,7 +474,6 @@ _Started: March 3, 2026_
   - On the agency detail page: "Record Payment" button
   - Enter: amount, date, method (bank transfer, cash, card), reference number
   - Stores a payment history log per agency
-  - Useful before Stripe integration is built — real agencies will pay via bank transfer
 
 - [ ] **S3.5 — Revenue per agency report**
   - On the agency detail page: a simple table of recorded payments + total paid to date

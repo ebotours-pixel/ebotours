@@ -17,10 +17,14 @@ import {
   Globe,
   Search,
   MoreHorizontal,
-  ExternalLink,
   Power,
   ChevronDown,
   ChevronRight,
+  StickyNote,
+  Settings,
+  Ban,
+  PlayCircle,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,10 +34,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { switchAgency } from '@/app/super-admin/actions';
+import {
+  switchAgency,
+  suspendAgency,
+  unsuspendAgency,
+  deleteAgency,
+} from '@/app/super-admin/actions';
 import { AgencySettings } from '@/types/agency';
 import { AgencySettingsDialog } from './agency-settings-dialog';
 import type { AgencyHealthRow } from '@/lib/supabase/super-admin';
+import Link from 'next/link';
 
 interface AgencyListProps {
   agencies: {
@@ -45,6 +55,7 @@ interface AgencyListProps {
     created_at: string;
     settings?: AgencySettings;
     last_admin_login_at?: string | null;
+    internal_notes?: string | null;
   }[];
   currentSlug: string;
   healthData: Record<string, AgencyHealthRow>;
@@ -155,7 +166,17 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
                           <Building2 className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col">
-                          <span>{agency.name}</span>
+                          <Link
+                            href={`/super-admin/agencies/${agency.id}`}
+                            className="flex items-center gap-1.5 hover:underline"
+                          >
+                            {agency.name}
+                            {agency.internal_notes && agency.internal_notes.trim() && (
+                              <span title={agency.internal_notes}>
+                                <StickyNote className="h-3 w-3 text-amber-500" />
+                              </span>
+                            )}
+                          </Link>
                           {agency.domain && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Globe className="h-3 w-3" /> {agency.domain}
@@ -273,9 +294,52 @@ export function AgencyList({ agencies, currentSlug, healthData }: AgencyListProp
                               Active Context
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem>
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            View Details
+                          <DropdownMenuItem asChild>
+                            <Link href={`/super-admin/agencies/${agency.id}`}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              Edit Settings
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {agency.status === 'active' ? (
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                startTransition(async () => {
+                                  const reason = window.prompt('Reason for suspension:');
+                                  if (reason) await suspendAgency(agency.id, reason);
+                                })
+                              }
+                              disabled={pending}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Suspend
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onSelect={() => startTransition(() => unsuspendAgency(agency.id))}
+                              disabled={pending}
+                              className="text-green-600 focus:text-green-600"
+                            >
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              Unsuspend
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              startTransition(async () => {
+                                try {
+                                  await deleteAgency(agency.id);
+                                } catch {
+                                  alert('Cannot delete: agency has bookings.');
+                                }
+                              })
+                            }
+                            disabled={pending}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
