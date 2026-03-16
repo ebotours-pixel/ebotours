@@ -1671,59 +1671,100 @@ export default function SettingsPage() {
                   )}
                 />
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name={'seo.site.ogImageUrl' as never}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>OpenGraph Image URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={'seo.site.twitterImageUrl' as never}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Twitter Image URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={'favicon' as never}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Favicon</FormLabel>
-                        <FormControl>
-                          <ImageUploader value={field.value || []} onChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={'seo.site.faviconUrl' as never}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Favicon URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Social & Favicon Images */}
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name={'seo.site.ogImageUrl' as never}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>OpenGraph Image URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Recommended: 1200×630 px — shown when shared on Facebook, LinkedIn, etc.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={'seo.site.twitterImageUrl' as never}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Twitter / X Image URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://..." {...field} />
+                          </FormControl>
+                          <p className="text-xs text-muted-foreground">
+                            Recommended: 1200×628 px — shown when shared on Twitter / X.
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Favicon — upload + URL in one card */}
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                    <div>
+                      <p className="text-sm font-medium leading-none">Favicon</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The small icon shown in browser tabs and bookmarks. Use .ico for best
+                        cross-browser support, or .png (32×32 / 64×64).
+                      </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 items-start">
+                      <FormField
+                        control={form.control}
+                        name={'favicon' as never}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground font-normal">
+                              Upload file
+                            </FormLabel>
+                            <FormControl>
+                              <ImageUploader
+                                value={field.value || []}
+                                onChange={field.onChange}
+                                maxFiles={1}
+                                accept={{
+                                  'image/x-icon': ['.ico'],
+                                  'image/vnd.microsoft.icon': ['.ico'],
+                                  'image/png': ['.png'],
+                                  'image/jpeg': ['.jpg', '.jpeg'],
+                                  'image/webp': ['.webp'],
+                                }}
+                                hint="ICO, PNG, JPG or WEBP — 32×32 recommended"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={'seo.site.faviconUrl' as never}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground font-normal">
+                              Or paste a URL
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/favicon.ico" {...field} />
+                            </FormControl>
+                            <p className="text-xs text-muted-foreground">
+                              If both are provided, the uploaded file takes priority.
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

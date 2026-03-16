@@ -11,9 +11,11 @@ interface ImageUploaderProps {
   value: (File | string)[];
   onChange: (files: (File | string)[]) => void;
   maxFiles?: number;
+  accept?: Record<string, string[]>;
+  hint?: string;
 }
 
-export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps) {
+export function ImageUploader({ value, onChange, maxFiles, accept, hint }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>([]);
   const dragItemRef = useRef<number | null>(null);
   const dragOverRef = useRef<number | null>(null);
@@ -57,14 +59,16 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
     [value, onChange, maxFiles]
   );
 
+  const defaultAccept = {
+    'image/jpeg': [],
+    'image/png': [],
+    'image/gif': [],
+    'image/webp': [],
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'image/gif': [],
-      'image/webp': [],
-    },
+    accept: accept ?? defaultAccept,
     multiple: true,
     maxFiles: maxFiles,
   });
@@ -119,7 +123,7 @@ export function ImageUploader({ value, onChange, maxFiles }: ImageUploaderProps)
           <p className="mb-2 text-sm text-muted-foreground">
             <span className="font-semibold">Click to upload</span> or drag and drop
           </p>
-          <p className="text-xs text-muted-foreground">PNG, JPG, GIF or WEBP</p>
+          <p className="text-xs text-muted-foreground">{hint ?? 'PNG, JPG, GIF or WEBP'}</p>
         </div>
       </div>
       {previews.length > 0 && (
