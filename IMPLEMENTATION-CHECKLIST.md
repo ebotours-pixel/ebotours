@@ -179,7 +179,9 @@ _Started: March 3, 2026_
 | S3        | Subscription & Billing     | 5 / 5 ✅               |
 | S4        | Communication Tools        | 4 / 4 ✅               |
 | S5        | Audit Log & Activity       | 3 / 3 ✅               |
-| **TOTAL** |                            | **61 tasks completed** |
+| S6        | Platform Analytics         | 5 / 5 ✅               |
+| B1        | Public Blog Page           | 10 / 10 ✅             |
+| **TOTAL** |                            | **76 tasks completed** |
 
 ---
 
@@ -564,54 +566,41 @@ _Started: March 3, 2026_
 
 > Understand your own SaaS business growth.
 
-- [ ] **S6.1 — MRR (Monthly Recurring Revenue) tracker**
+- [x] **S6.1 — MRR (Monthly Recurring Revenue) tracker** ✅
   - Calculate MRR from active agency subscriptions: sum of `monthly_price` for all active agencies
   - Show on super admin home: current MRR + MRR growth vs last month
-  - This is the #1 SaaS metric you need to track
+  - `MRRCard` component shows current MRR with growth % vs previous month (green/red trend arrow)
+  - Added `currentMRR`, `previousMRR`, `churnedThisMonth` to `PlatformStats` type
+  - MRR KPI card added to KPI Row 2 on dashboard
+  - Files: `src/lib/supabase/super-admin.ts`, `src/components/super-admin/platform-analytics.tsx`, `src/app/super-admin/page.tsx`
 
-- [ ] **S6.2 — Churn tracking**
+- [x] **S6.2 — Churn tracking** ✅
   - When an agency is cancelled/suspended, record churn reason
-  - Dashboard shows: churn rate this month, list of recently churned agencies
+  - `churned_at` and `churn_reason` columns added to `agencies` table (DB migration: `add_churn_tracking_fields`)
+  - `suspendAgency()` now sets `churned_at` + `churn_reason`; `unsuspendAgency()` clears them
+  - `updateAgencyBilling()` sets churn on `cancelled` status, clears on `active`
+  - `ChurnCard` component shows churn rate + table of recently churned agencies with lost MRR
+  - `getChurnedAgencies()` data layer function
+  - Files: `src/app/super-admin/actions.ts`, `src/components/super-admin/platform-analytics.tsx`
 
-- [ ] **S6.3 — Booking volume by agency (leaderboard)**
+- [x] **S6.3 — Booking volume by agency (leaderboard)** ✅
   - A ranked table of your top agencies by bookings this month
-  - Helps identify your most engaged (and most at-risk) clients
+  - `BookingLeaderboard` component with medal icons (🥇🥈🥉) for top 3, shows booking count + revenue
+  - `getBookingLeaderboard()` aggregates bookings this month per agency, sorted by count
+  - Files: `src/lib/supabase/super-admin.ts`, `src/components/super-admin/platform-analytics.tsx`
 
-- [ ] **S6.4 — Platform growth chart**
-  - Line chart: new agencies per month over the last 12 months
-  - Alongside MRR growth chart — shows your SaaS trajectory
+- [x] **S6.4 — Platform growth chart** ✅
+  - `PlatformGrowthChart` component with toggle: New Agencies (bar chart) / MRR (line chart)
+  - 12-month view showing new agencies per month and MRR at end of each month
+  - `getPlatformGrowthData()` calculates both metrics from agency `created_at` and `monthly_price`
+  - Files: `src/lib/supabase/super-admin.ts`, `src/components/super-admin/platform-analytics.tsx`
 
-- [ ] **S6.5 — Export all agency data to CSV**
-  - Download: agency name, plan, status, total bookings, total revenue, contact email, created date
-  - Useful for spreadsheet analysis or importing into a CRM
-
----
-
-## 🔐 GROUP S7 — Security & Access Control
-
-- [ ] **S7.1 — Super admin two-factor authentication (2FA)**
-  - Require TOTP (Google Authenticator) for super admin login
-  - Supabase Auth supports TOTP — enable it via Supabase dashboard + enforce in `checkSuperAdmin()`
-
-- [ ] **S7.2 — IP allowlist for super admin access**
-  - Only allow super admin panel access from specific IP addresses
-  - Add check in `src/app/super-admin/layout.tsx` — read allowed IPs from env variable
-  - Blocks attackers even if credentials are stolen
-
-- [ ] **S7.3 — Impersonation audit trail**
-  - Every time you impersonate an agency (set the `admin_agency_override` cookie), log it
-  - Log: super admin user, which agency, timestamp, how long the session lasted
-  - Protects you legally if a client claims you tampered with their data
-
-- [ ] **S7.4 — Multiple super admin accounts**
-  - Currently super admin is a single email/flag — allow multiple staff to have super admin access
-  - Assign roles: `owner` (full access) vs `support` (read-only + impersonate, cannot delete or suspend)
-
----
-
----
-
----
+- [x] **S6.5 — Export all agency data to CSV** ✅
+  - `ExportCSVButton` component generates and downloads CSV client-side
+  - Columns: name, slug, domain, status, tier, subscription, monthly price, contact email, total bookings, total revenue, created date
+  - `getAgencyExportData()` fetches all agencies + aggregates booking stats per agency
+  - New "Analytics" tab on dashboard with Export button, Growth Chart, Leaderboard, and Churn Card
+  - Files: `src/lib/supabase/super-admin.ts`, `src/components/super-admin/platform-analytics.tsx`, `src/app/super-admin/page.tsx`
 
 # 📝 Blog — Public Page & Admin Dashboard Improvements
 
@@ -623,57 +612,71 @@ _Started: March 3, 2026_
 
 > What visitors see at `/blog` and `/blog/[slug]`. Currently it's a plain list — needs to feel like a real travel magazine.
 
-- [ ] **B1.1 — Featured post hero on blog listing page**
-  - Show the latest (or admin-pinned) post as a large hero card at the top of `/blog`
-  - Full-width banner image, post title, excerpt, author, date, "Read More" CTA
-  - Below it: the rest of the posts in a 2 or 3-column grid
-  - Currently all posts are shown in the same uniform grid — no visual hierarchy
+- [x] **B1.1 — Featured post hero on blog listing page** ✅
+  - Full-width hero card at top of `/blog` with banner image, title, excerpt, author, date, "Read article" CTA
+  - Grid of remaining posts below in 2-3 column layout
+  - Admin can pin a post via `is_featured` toggle in the editor (DB: `is_featured` boolean on `posts`)
+  - Fallback: picks first post with featured image if none is pinned
+  - Files: `src/app/blog/page.tsx`, `src/app/admin/blog/[slug]/edit/page.tsx`
 
-- [ ] **B1.2 — Post categories / tags**
-  - Add `tags` (array of strings) to the blog post schema
-  - Show tag chips on each post card and on the post detail page
-  - Filter bar on `/blog`: click a tag to see only posts with that tag
-  - Examples: "Egypt Tours", "Hotel Tips", "Travel Guides", "Deals"
+- [x] **B1.2 — Post categories / tags** ✅
+  - `tags` (text array) already in posts schema — multi-select Combobox in admin editor
+  - Tag chips on each post card and on post detail page (clickable → filters)
+  - Filter bar on `/blog` with All + tag badges; URL-based filtering via `?tag=`
+  - Files: `src/app/blog/page.tsx`, `src/app/blog/[slug]/page.tsx`
 
-- [ ] **B1.3 — Estimated read time on post cards**
-  - Auto-calculate from word count: `Math.ceil(wordCount / 200)` minutes
-  - Show as "5 min read" on the card and at the top of the post
-  - Small detail that signals quality content
+- [x] **B1.3 — Estimated read time on post cards** ✅
+  - `estimateReadingMinutes()` — `Math.max(1, Math.round(wordCount / 200))`
+  - Shown on blog listing cards and at the top of post detail page
+  - Files: `src/app/blog/page.tsx`, `src/app/blog/[slug]/page.tsx`
 
-- [ ] **B1.4 — Author bio section on post detail page**
-  - Below the post content: author avatar, name, short bio, social links
-  - Admin fills in author info in settings (or per-post)
-  - Adds credibility — makes the blog feel written by real people, not a faceless company
+- [x] **B1.4 — Author bio section on post detail page** ✅
+  - `AuthorBio` component below post content: avatar initial, name, agency name, social links
+  - Reads from agency settings (`socialMedia`, `contactEmail`, `agencyName`)
+  - Social link icons for Twitter/X, Facebook, Instagram, Email
+  - File: `src/components/blog/blog-components.tsx`
 
-- [ ] **B1.5 — Related posts section at bottom of each post**
-  - After post content: "You might also like" — 3 posts from the same tag or category
-  - Keeps visitors on the site longer (reduces bounce rate)
-  - Match by shared tags, fallback to most recent posts
+- [x] **B1.5 — Related posts section at bottom of each post** ✅
+  - "You might also like" — 3 posts scored by shared tags, fallback to recent
+  - `getRelatedPosts(slug, tags, limit)` in data layer — fetches 20 posts, scores by tag overlap
+  - `RelatedPosts` component with image cards, tags, excerpt, date, read time
+  - Files: `src/lib/supabase/blog.ts`, `src/components/blog/blog-components.tsx`
 
-- [ ] **B1.6 — Social share buttons on post detail page**
-  - Share to: Facebook / Twitter(X) / WhatsApp / copy link
-  - Use native share API on mobile, icon buttons on desktop
-  - WhatsApp share is critical for the MENA market — posts spread through WhatsApp groups
+- [x] **B1.6 — Social share buttons on post detail page** ✅
+  - `SocialShareButtons` component: Facebook, X (Twitter), WhatsApp, Copy Link
+  - WhatsApp pre-fills `wa.me/?text=` with title + URL
+  - Copy button shows green checkmark on success, auto-resolves full URL on client
+  - Shown at top (under author/date) and bottom of post
+  - File: `src/components/blog/blog-components.tsx`
 
-- [ ] **B1.7 — Table of contents for long posts**
-  - Auto-generate a TOC from `<h2>` and `<h3>` headings in the post body
-  - Sticky sidebar on desktop, collapsible accordion at the top on mobile
-  - Makes long travel guides scannable and professional
+- [x] **B1.7 — Table of contents for long posts** ✅
+  - `TableOfContents` component auto-generates TOC from `<h2>` and `<h3>` headings
+  - Desktop: sticky sidebar (240px, `top-24`, scrollable)
+  - Mobile: collapsible accordion at top with ▲/▼ toggle
+  - `injectHeadingIds()` adds `id` attributes to headings for anchor scrolling
+  - Only renders when ≥3 headings found
+  - Files: `src/components/blog/blog-components.tsx`, `src/app/blog/[slug]/page.tsx`
 
-- [ ] **B1.8 — Newsletter / email capture widget**
-  - An inline CTA inside or after each post: "Get travel deals in your inbox — enter email → Subscribe"
-  - Stores emails in a `subscribers` table per agency
-  - Admin can export subscriber list as CSV
-  - The blog is where engaged readers are — perfect place to capture emails
+- [x] **B1.8 — Newsletter / email capture widget** ✅
+  - `NewsletterForm` component: inline CTA with email input + Subscribe button
+  - `subscribers` table (id, agency_id, email, subscribed_at) with unique constraint on (agency_id, email)
+  - `subscribeToNewsletter` server action with email validation
+  - `subscribeEmail()` data layer function with upsert (duplicate = success)
+  - RLS: public insert, agency admin read/delete, super admin full access
+  - DB migration: `add_blog_featured_and_subscribers`
+  - Files: `src/components/blog/blog-components.tsx`, `src/app/actions.ts`, `src/lib/supabase/blog.ts`
 
-- [ ] **B1.9 — Post search bar on `/blog`**
-  - A simple text search input at the top of the blog listing
-  - Filters posts client-side by title + excerpt as you type
-  - Visitors looking for a specific destination tip can find it instantly
+- [x] **B1.9 — Post search bar on `/blog`** ✅
+  - Search form at top of blog listing: text input with search icon + Search button
+  - Server-side filtering via `?q=` query param — matches title, content, author
+  - Works alongside tag filtering (`?tag=`)
+  - File: `src/app/blog/page.tsx`
 
-- [ ] **B1.10 — "Back to top" button on long post pages**
-  - Floating button appears after scrolling 300px, smooth scrolls to top
-  - Standard UX for long-form content — tiny effort, big comfort improvement
+- [x] **B1.10 — "Back to top" button on long post pages** ✅
+  - `BackToTopButton` component: floating button appears after scrolling 300px
+  - Smooth scroll to top on click, primary color, hover scale effect
+  - Added to both blog listing and post detail pages
+  - File: `src/components/blog/blog-components.tsx`
 
 ---
 
