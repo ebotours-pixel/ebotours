@@ -31,20 +31,50 @@ export function BookingsClient({ initialBookings }: BookingsClientProps) {
   const confirmedBookings = bookings.filter((b) => b.status === 'Confirmed').length;
 
   const handleExport = () => {
-    const headers = ['ID', 'Customer Name', 'Email', 'Date', 'Status', 'Total Price'];
-    const csvContent = [
-      headers.join(','),
-      ...bookings.map((b) =>
-        [
-          b.id,
-          `"${b.customerName}"`,
-          b.customerEmail,
-          new Date(b.bookingDate).toLocaleDateString(),
-          b.status,
-          b.totalPrice,
-        ].join(',')
-      ),
-    ].join('\n');
+    // Escape a value for CSV: wrap in quotes if it contains commas, quotes, or newlines
+    const esc = (val: string | number | undefined | null): string => {
+      if (val === undefined || val === null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = [
+      'Booking ID',
+      'Customer Name',
+      'Email',
+      'Phone',
+      'Nationality',
+      'Booking Date',
+      'Status',
+      'Payment Method',
+      'Items',
+      'Total Price (USD)',
+    ];
+
+    const rows = bookings.map((b) => {
+      const itemNames = (b.bookingItems || [])
+        .map((item) => item.tours?.name ?? item.upsellItems?.name ?? 'Item')
+        .join(' | ');
+
+      return [
+        esc(b.id),
+        esc(b.customerName),
+        esc(b.customerEmail),
+        esc(b.phoneNumber),
+        esc(b.nationality),
+        esc(new Date(b.bookingDate).toLocaleDateString('en-GB')),
+        esc(b.status),
+        esc(b.paymentMethod),
+        esc(itemNames),
+        esc(b.totalPrice),
+      ].join(',');
+    });
+
+    // BOM prefix (\uFEFF) ensures Excel and Arabic Windows open the file correctly
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -54,6 +84,7 @@ export function BookingsClient({ initialBookings }: BookingsClientProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

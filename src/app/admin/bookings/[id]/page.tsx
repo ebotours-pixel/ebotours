@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { BookingStatusActions } from '@/components/admin/booking-status-actions';
+import { BookingExportCsvButton } from '@/components/admin/booking-export-csv-button';
 
 interface BookingDetailsPageProps {
   params: Promise<{
@@ -129,6 +130,7 @@ export default async function BookingDetailsPage({ params }: BookingDetailsPageP
                   Download Voucher
                 </a>
               </Button>
+              <BookingExportCsvButton booking={booking} />
             </div>
           </CardContent>
         </Card>
