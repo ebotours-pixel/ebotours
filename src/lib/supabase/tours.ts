@@ -18,14 +18,14 @@ type GetToursOptions = {
 function ensureTourDefaults(tour: Tour): Tour {
   return {
     ...tour,
-    images: tour.images || [],
-    type: tour.type || [],
-    itinerary: tour.itinerary || [],
-    priceTiers: tour.priceTiers || [],
-    packages: tour.packages || [],
-    highlights: tour.highlights || [],
-    includes: tour.includes || [],
-    excludes: tour.excludes || [],
+    images: Array.isArray(tour.images) ? tour.images : [],
+    type: Array.isArray(tour.type) ? tour.type : [],
+    itinerary: Array.isArray(tour.itinerary) ? tour.itinerary : [],
+    priceTiers: Array.isArray(tour.priceTiers) ? tour.priceTiers : [],
+    packages: Array.isArray(tour.packages) ? tour.packages : [],
+    highlights: Array.isArray(tour.highlights) ? tour.highlights : [],
+    includes: Array.isArray(tour.includes) ? tour.includes : [],
+    excludes: Array.isArray(tour.excludes) ? tour.excludes : [],
     // Guard against null from DB columns — z.string().optional() rejects null
     durationText: tour.durationText ?? '',
     tourType: tour.tourType ?? '',
